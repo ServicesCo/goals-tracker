@@ -1,10 +1,12 @@
-const express  = require('express');
-const { Pool } = require('pg');
-const cors     = require('cors');
-const path     = require('path');
+const express = require('express');
+const Database = require('better-sqlite3');
+const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 5000;
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'goals.db');
 
 app.use(cors());
 app.use(express.json());
@@ -14,10 +16,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 const SESSION_PASSWORD = process.env.SESSION_PASSWORD || 'takeaction';
 
 app.use((req, res, next) => {
-  // Only protect API routes — static files are served openly (client-side JS handles login redirect)
   if (!req.path.startsWith('/api/') || req.path.startsWith('/api/auth') || req.path === '/api/status') return next();
-  const authHeader = req.headers.authorization;
-  if (authHeader === SESSION_PASSWORD || req.query.pwd === SESSION_PASSWORD) return next();
+  if (req.headers.authorization === SESSION_PASSWORD || req.query.pwd === SESSION_PASSWORD) return next();
   res.status(401).json({ error: 'Unauthorized' });
 });
 
@@ -28,9 +28,60 @@ app.get('/api/auth/check', (req, res) => {
 });
 
 // ─── DATABASE ─────────────────────────────────────────────────────────────────
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const db = new Database(DB_PATH);
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
 
-const query = (text, params) => pool.query(text, params);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS goals (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    priority TEXT,
+    category TEXT,
+    description TEXT,
+    metric TEXT,
+    kpi REAL,
+    unit TEXT,
+    lower_is_better INTEGER DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS daily_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    goal_id INTEGER REFERENCES goals(id),
+    date TEXT NOT NULL,
+    value REAL NOT NULL,
+    logged_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(goal_id, date)
+  );
+  CREATE TABLE IF NOT EXISTS daily_notes (
+    date TEXT PRIMARY KEY,
+    note TEXT DEFAULT '',
+    emojis TEXT DEFAULT ''
+  );
+  CREATE TABLE IF NOT EXISTS calendar_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    color TEXT NOT NULL DEFAULT '#6ea8ff',
+    notes TEXT DEFAULT ''
+  );
+  CREATE TABLE IF NOT EXISTS surf_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    quality REAL,
+    wave_size TEXT DEFAULT '',
+    tide TEXT DEFAULT '',
+    swell_direction TEXT DEFAULT '',
+    swell_secondary TEXT DEFAULT '',
+    location TEXT DEFAULT '',
+    notes TEXT DEFAULT '',
+    surfboard TEXT DEFAULT '',
+    wind TEXT DEFAULT '',
+    texture TEXT DEFAULT '',
+    time_start TEXT DEFAULT '',
+    time_end TEXT DEFAULT ''
+  );
+`);
 
 // Cumulative goals (SUM for YTD): Savings, Surf, Reading, Surf Sessions
 const CUMULATIVE_GOALS   = [1, 3, 9, 13];
@@ -39,50 +90,82 @@ const AVERAGE_GOALS      = [2, 6];
 // Weekly sum/count goals (total / weeks elapsed): Work, Family, Friends, Stretching, Alcohol
 const WEEKLY_COUNT_GOALS = [4, 7, 8, 10, 11];
 
+// ─── SEED ─────────────────────────────────────────────────────────────────────
+function seedIfEmpty() {
+  const seedPath = path.join(__dirname, 'db-export.json');
+  let seed;
+  try {
+    seed = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+  } catch (e) {
+    console.log('[seed] no db-export.json, skipping');
+    return;
+  }
+
+  const count = db.prepare('SELECT COUNT(*) AS n FROM goals').get().n;
+  if (count > 0) {
+    // Always sync lower_is_better flags from seed (source of truth)
+    const upd = db.prepare('UPDATE goals SET lower_is_better = ? WHERE id = ?');
+    seed.goals.forEach(g => upd.run(g.lower_is_better || 0, g.id));
+    console.log(`[seed] DB has ${count} goals, flags synced`);
+    return;
+  }
+
+  console.log('[seed] DB empty, seeding from db-export.json');
+  const insertGoal = db.prepare(`INSERT INTO goals
+    (id, name, priority, category, description, metric, kpi, unit, lower_is_better)
+    VALUES (?,?,?,?,?,?,?,?,?)`);
+  const insertLog  = db.prepare(`INSERT INTO daily_logs (goal_id, date, value) VALUES (?,?,?)`);
+  const insertNote = db.prepare(`INSERT INTO daily_notes (date, note) VALUES (?,?)`);
+
+  db.transaction(() => {
+    seed.goals.forEach(g => insertGoal.run(
+      g.id, g.name, g.priority, g.category, g.description, g.metric, g.kpi, g.unit, g.lower_is_better || 0
+    ));
+    (seed.logs  || []).forEach(l => insertLog.run(l.goal_id, l.date, l.value));
+    (seed.notes || []).forEach(n => insertNote.run(n.date, n.note));
+  })();
+
+  console.log(`[seed] Done — ${seed.goals.length} goals, ${(seed.logs||[]).length} logs, ${(seed.notes||[]).length} notes`);
+}
+
+seedIfEmpty();
+
 // ─── API ROUTES ───────────────────────────────────────────────────────────────
 
-// Public status/debug endpoint — no auth required
-app.get('/api/status', async (req, res) => {
+// Public status — no auth
+app.get('/api/status', (req, res) => {
   try {
-    const { rows: logCount  } = await query('SELECT COUNT(*) AS n FROM daily_logs');
-    const { rows: goalCount } = await query('SELECT COUNT(*) AS n FROM goals');
-    const hasDbUrl = !!process.env.DATABASE_URL;
-    console.log(`[api/status] db ok — goals=${goalCount[0].n} logs=${logCount[0].n}`);
-    res.json({ db: 'ok', goals: goalCount[0].n, logs: logCount[0].n, hasDbUrl });
+    const logs  = db.prepare('SELECT COUNT(*) AS n FROM daily_logs').get().n;
+    const goals = db.prepare('SELECT COUNT(*) AS n FROM goals').get().n;
+    res.json({ db: 'ok', goals, logs });
   } catch (e) {
-    console.error('[api/status] DB ERROR:', e.message);
-    res.json({ db: 'error', error: e.message, hasDbUrl: !!process.env.DATABASE_URL });
+    res.json({ db: 'error', error: e.message });
   }
 });
 
 // GET all goals
-app.get('/api/goals', async (req, res) => {
+app.get('/api/goals', (req, res) => {
   try {
-    const { rows } = await query('SELECT * FROM goals ORDER BY id');
-    res.json(rows);
+    res.json(db.prepare('SELECT * FROM goals ORDER BY id').all());
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // GET full trends data (monthly, quarterly, weekly) for a goal
-app.get('/api/logs/trends/:goalId', async (req, res) => {
+app.get('/api/logs/trends/:goalId', (req, res) => {
   try {
     const goalId = parseInt(req.params.goalId);
     const year   = new Date().getFullYear();
     const today  = new Date().toISOString().slice(0, 10);
 
-    const { rows } = await query(
-      'SELECT date, value FROM daily_logs WHERE goal_id = $1 AND date >= $2 AND date <= $3 ORDER BY date ASC',
-      [goalId, `${year}-01-01`, today]
-    );
+    const rows = db.prepare(
+      'SELECT date, value FROM daily_logs WHERE goal_id = ? AND date >= ? AND date <= ? ORDER BY date ASC'
+    ).all(goalId, `${year}-01-01`, today);
 
-    // For Surf (goal 3), use Surf Sessions (goal 13) entries for session counts
     let sessionRows = null;
     if (goalId === 3) {
-      const sr = await query(
-        'SELECT date, value FROM daily_logs WHERE goal_id = 13 AND date >= $1 AND date <= $2 ORDER BY date ASC',
-        [`${year}-01-01`, today]
-      );
-      sessionRows = sr.rows;
+      sessionRows = db.prepare(
+        'SELECT date, value FROM daily_logs WHERE goal_id = 13 AND date >= ? AND date <= ? ORDER BY date ASC'
+      ).all(`${year}-01-01`, today);
     }
 
     const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -168,10 +251,12 @@ app.get('/api/logs/trends/:goalId', async (req, res) => {
       const data = weekMap[cur] || { total: 0, count: 0, sessions: 0 };
       cumulative  += data.total;
       cumSessions += data.sessions;
-      weeks.push({ label: `W${wNum}`, total: +data.total.toFixed(3),
+      weeks.push({
+        label: `W${wNum}`, total: +data.total.toFixed(3),
         avg: data.count > 0 ? +(data.total/data.count).toFixed(3) : 0,
         count: data.count, sessions: data.sessions,
-        cumulative: +cumulative.toFixed(3), cumSessions });
+        cumulative: +cumulative.toFixed(3), cumSessions
+      });
       cur = addWeeks(cur, 1);
       wNum++;
     }
@@ -180,17 +265,16 @@ app.get('/api/logs/trends/:goalId', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET monthly breakdown for a single goal (for combo chart)
-app.get('/api/logs/yearly/:goalId', async (req, res) => {
+// GET monthly breakdown for a single goal
+app.get('/api/logs/yearly/:goalId', (req, res) => {
   try {
     const goalId = parseInt(req.params.goalId);
     const year   = new Date().getFullYear();
     const currentMonth = new Date().getMonth();
 
-    const { rows } = await query(
-      'SELECT date, value FROM daily_logs WHERE goal_id = $1 AND date >= $2 AND date <= $3 ORDER BY date ASC',
-      [goalId, `${year}-01-01`, `${year}-12-31`]
-    );
+    const rows = db.prepare(
+      'SELECT date, value FROM daily_logs WHERE goal_id = ? AND date >= ? AND date <= ? ORDER BY date ASC'
+    ).all(goalId, `${year}-01-01`, `${year}-12-31`);
 
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const monthTotals = new Array(12).fill(0);
@@ -210,21 +294,20 @@ app.get('/api/logs/yearly/:goalId', async (req, res) => {
 });
 
 // GET aggregated YTD dashboard data
-app.get('/api/logs', async (req, res) => {
+app.get('/api/logs', (req, res) => {
   try {
-    const { rows: goals } = await query('SELECT * FROM goals ORDER BY id');
+    const goals = db.prepare('SELECT * FROM goals ORDER BY id').all();
     const now       = new Date();
     const yearStart = `${now.getFullYear()}-01-01`;
     const today     = now.toISOString().slice(0, 10);
     const result    = [];
+    const stmt = db.prepare(
+      'SELECT date, value FROM daily_logs WHERE goal_id = ? AND date >= ? AND date <= ? ORDER BY date ASC'
+    );
 
     for (const g of goals) {
       if (g.id === 12) continue;
-
-      const { rows } = await query(
-        'SELECT date, value FROM daily_logs WHERE goal_id = $1 AND date >= $2 AND date <= $3 ORDER BY date ASC',
-        [g.id, yearStart, today]
-      );
+      const rows = stmt.all(g.id, yearStart, today);
       if (rows.length === 0) continue;
 
       const vals = rows.map(r => parseFloat(r.value));
@@ -256,48 +339,35 @@ app.get('/api/logs', async (req, res) => {
 });
 
 // GET all daily logs for a specific month (YYYY-MM)
-app.get('/api/logs/monthly', async (req, res) => {
+app.get('/api/logs/monthly', (req, res) => {
   try {
     const month = req.query.month;
     if (!month) return res.status(400).json({ error: 'month param required' });
-    const { rows } = await query(
-      "SELECT goal_id, date, value FROM daily_logs WHERE date LIKE $1 ORDER BY date ASC",
-      [`${month}%`]
-    );
+    const rows = db.prepare(
+      "SELECT goal_id, date, value FROM daily_logs WHERE date LIKE ? ORDER BY date ASC"
+    ).all(`${month}%`);
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST save daily logs (upserts entries, deletes cleared cells)
-app.post('/api/log/daily', async (req, res) => {
-  const { entries = [], deletions = [] } = req.body;
-  const client = await pool.connect();
+// POST save daily logs
+app.post('/api/log/daily', (req, res) => {
   try {
-    await client.query('BEGIN');
-    for (const e of entries) {
-      if (e.value !== null && e.value !== undefined && e.value !== '') {
-        await client.query(
-          `INSERT INTO daily_logs (goal_id, date, value)
-           VALUES ($1, $2, $3)
-           ON CONFLICT (goal_id, date) DO UPDATE SET value = EXCLUDED.value, logged_at = NOW()`,
-          [e.goal_id, e.date, parseFloat(e.value)]
-        );
-      }
-    }
-    for (const d of deletions) {
-      await client.query(
-        'DELETE FROM daily_logs WHERE goal_id = $1 AND date = $2',
-        [d.goal_id, d.date]
-      );
-    }
-    await client.query('COMMIT');
+    const { entries = [], deletions = [] } = req.body;
+    const ins = db.prepare(`INSERT INTO daily_logs (goal_id, date, value)
+      VALUES (?, ?, ?)
+      ON CONFLICT(goal_id, date) DO UPDATE SET value = excluded.value, logged_at = datetime('now')`);
+    const del = db.prepare('DELETE FROM daily_logs WHERE goal_id = ? AND date = ?');
+    db.transaction(() => {
+      entries.forEach(e => {
+        if (e.value !== null && e.value !== undefined && e.value !== '') {
+          ins.run(e.goal_id, e.date, parseFloat(e.value));
+        }
+      });
+      deletions.forEach(d => del.run(d.goal_id, d.date));
+    })();
     res.json({ ok: true });
-  } catch (e) {
-    await client.query('ROLLBACK');
-    res.status(500).json({ error: e.message });
-  } finally {
-    client.release();
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // GET meta (week, day, market data)
@@ -343,10 +413,10 @@ app.get('/api/meta', async (req, res) => {
   });
 });
 
-// GET year-view data for 2026 (exercise, work, screen time, surf, reading per day)
-app.get('/api/year-view/2026', async (req, res) => {
+// GET year-view data for 2026
+app.get('/api/year-view/2026', (req, res) => {
   try {
-    const { rows } = await query(`
+    const rows = db.prepare(`
       SELECT
         date,
         MAX(CASE WHEN goal_id = 6 THEN value END) AS exercise,
@@ -358,9 +428,9 @@ app.get('/api/year-view/2026', async (req, res) => {
       WHERE date BETWEEN '2026-01-01' AND '2026-12-31'
         AND goal_id IN (2, 3, 4, 6, 9)
       GROUP BY date
-    `);
+    `).all();
 
-    const { rows: noteRows } = await query(`SELECT date FROM daily_notes WHERE note != ''`);
+    const noteRows = db.prepare(`SELECT date FROM daily_notes WHERE note != ''`).all();
     const noteSet = new Set(noteRows.map(n => n.date));
 
     const byDate = {};
@@ -382,27 +452,28 @@ app.get('/api/year-view/2026', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET current streaks for key habit goals
-app.get('/api/streaks', async (req, res) => {
+// GET current streaks
+app.get('/api/streaks', (req, res) => {
   try {
     const habitGoals = [
-      { id: 6,  label: 'Exercise',     unit: 'days', fn: v => v >= 1 },
-      { id: 3,  label: 'Surf',         unit: 'days', fn: v => v > 0 },
-      { id: 10, label: 'Stretching',   unit: 'days', fn: v => v > 0 },
-      { id: 11, label: 'Alcohol-free', unit: 'days', fn: v => v === 0, missingIsPass: true },
-      { id: 2,  label: 'Screen time',  unit: 'days', fn: v => v <= 1.5 },
+      { id: 6,  label: 'Exercise',     fn: v => v >= 1 },
+      { id: 3,  label: 'Surf',         fn: v => v > 0 },
+      { id: 10, label: 'Stretching',   fn: v => v > 0 },
+      { id: 11, label: 'Alcohol-free', fn: v => v === 0, missingIsPass: true },
+      { id: 2,  label: 'Screen time',  fn: v => v <= 1.5 },
     ];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split('T')[0];
 
+    const stmt = db.prepare(
+      `SELECT date, value FROM daily_logs WHERE goal_id = ? AND date >= '2026-01-01' ORDER BY date DESC`
+    );
+
     const results = [];
     for (const goal of habitGoals) {
-      const { rows } = await query(
-        `SELECT date::text, value FROM daily_logs WHERE goal_id = $1 AND date >= '2026-01-01' ORDER BY date DESC`,
-        [goal.id]
-      );
+      const rows = stmt.all(goal.id);
       const logMap = {};
       for (const row of rows) logMap[row.date] = parseFloat(row.value);
 
@@ -426,289 +497,135 @@ app.get('/api/streaks', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET all notes with text
-app.get('/api/notes', async (req, res) => {
+// ─── NOTES ────────────────────────────────────────────────────────────────────
+app.get('/api/notes', (req, res) => {
   try {
-    const { rows } = await query(`SELECT date, note FROM daily_notes WHERE note != '' ORDER BY date ASC`);
+    const rows = db.prepare(`SELECT date, note FROM daily_notes WHERE note != '' ORDER BY date ASC`).all();
     res.json({ notes: rows.map(r => ({ date: r.date, note: r.note })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET all dates that have a non-empty note
-app.get('/api/notes/exists', async (req, res) => {
+app.get('/api/notes/exists', (req, res) => {
   try {
-    const { rows } = await query(`SELECT date FROM daily_notes WHERE note != '' ORDER BY date`);
+    const rows = db.prepare(`SELECT date FROM daily_notes WHERE note != '' ORDER BY date`).all();
     res.json({ dates: rows.map(r => r.date) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET note + emojis for a specific date
-app.get('/api/notes/:date', async (req, res) => {
+app.get('/api/notes/:date', (req, res) => {
   try {
-    const { rows } = await query('SELECT note, emojis FROM daily_notes WHERE date = $1', [req.params.date]);
-    res.json({ note: rows[0] ? rows[0].note : '', emojis: rows[0] ? (rows[0].emojis || '') : '' });
+    const row = db.prepare('SELECT note, emojis FROM daily_notes WHERE date = ?').get(req.params.date);
+    res.json({ note: row ? row.note : '', emojis: row ? (row.emojis || '') : '' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST save/update a note + emojis
-app.post('/api/notes', async (req, res) => {
+app.post('/api/notes', (req, res) => {
   try {
     const { date, note, emojis } = req.body;
     if (!date) return res.status(400).json({ error: 'date required' });
-    await query(
-      `INSERT INTO daily_notes (date, note, emojis) VALUES ($1, $2, $3)
-       ON CONFLICT (date) DO UPDATE SET note = EXCLUDED.note, emojis = EXCLUDED.emojis`,
-      [date, note || '', emojis || '']
-    );
+    db.prepare(`INSERT INTO daily_notes (date, note, emojis) VALUES (?, ?, ?)
+      ON CONFLICT(date) DO UPDATE SET note = excluded.note, emojis = excluded.emojis`)
+      .run(date, note || '', emojis || '');
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET all dates with manual emojis
-app.get('/api/emojis', async (req, res) => {
+app.get('/api/emojis', (req, res) => {
   try {
-    const { rows } = await query(`SELECT date, emojis FROM daily_notes WHERE emojis != '' ORDER BY date`);
+    const rows = db.prepare(`SELECT date, emojis FROM daily_notes WHERE emojis != '' ORDER BY date`).all();
     const map = {};
     rows.forEach(r => { map[r.date] = r.emojis.split(',').filter(Boolean); });
     res.json(map);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ─── DATABASE INIT ────────────────────────────────────────────────────────────
-async function initDb() {
+// ─── EVENTS ───────────────────────────────────────────────────────────────────
+app.get('/api/events', (req, res) => {
   try {
-    await query(`CREATE TABLE IF NOT EXISTS goals (
-      id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL,
-      priority TEXT,
-      category TEXT,
-      description TEXT,
-      metric TEXT,
-      kpi NUMERIC,
-      unit TEXT,
-      lower_is_better INTEGER DEFAULT 0
-    )`);
-    await query(`CREATE TABLE IF NOT EXISTS daily_logs (
-      id SERIAL PRIMARY KEY,
-      goal_id INTEGER REFERENCES goals(id),
-      date TEXT NOT NULL,
-      value NUMERIC NOT NULL,
-      logged_at TIMESTAMP DEFAULT NOW(),
-      UNIQUE(goal_id, date)
-    )`);
-    await query(`CREATE TABLE IF NOT EXISTS daily_notes (
-      date TEXT PRIMARY KEY,
-      note TEXT DEFAULT '',
-      emojis TEXT DEFAULT ''
-    )`);
-    console.log('[init] core tables ready');
-  } catch (e) { console.error('[init] initDb error:', e.message); }
-}
-
-// ─── STARTUP SEED ─────────────────────────────────────────────────────────────
-// If production DB is empty, seed it from db-export.json (generated from dev DB)
-async function seedIfEmpty() {
-  try {
-    const { rows } = await query('SELECT COUNT(*) AS n FROM goals');
-    if (parseInt(rows[0].n) > 0) { console.log('[seed] DB already has data, skipping seed'); return; }
-    console.log('[seed] DB is empty — seeding from db-export.json ...');
-    const seed = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'db-export.json'), 'utf8'));
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      for (const g of seed.goals) {
-        await client.query(
-          `INSERT INTO goals (id, name, priority, category, description, metric, kpi, unit, lower_is_better)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
-          [g.id, g.name, g.priority, g.category, g.description, g.metric, g.kpi, g.unit, g.lower_is_better || 0]
-        );
-      }
-      for (const l of seed.logs) {
-        await client.query(
-          `INSERT INTO daily_logs (goal_id, date, value) VALUES ($1,$2,$3) ON CONFLICT (goal_id, date) DO NOTHING`,
-          [l.goal_id, l.date, l.value]
-        );
-      }
-      for (const n of seed.notes) {
-        await client.query(
-          `INSERT INTO daily_notes (date, note) VALUES ($1,$2) ON CONFLICT (date) DO UPDATE SET note = EXCLUDED.note`,
-          [n.date, n.note]
-        );
-      }
-      await client.query('COMMIT');
-      console.log(`[seed] Done — seeded ${seed.goals.length} goals, ${seed.logs.length} logs, ${seed.notes.length} notes`);
-    } catch (e) {
-      await client.query('ROLLBACK');
-      console.error('[seed] FAILED:', e.message);
-    } finally { client.release(); }
-  } catch (e) { console.error('[seed] check failed:', e.message); }
-}
-
-// Always correct lower_is_better flags — fixes any seeded rows missing this value
-async function fixGoalFlags() {
-  try {
-    const seed = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'db-export.json'), 'utf8'));
-    for (const g of seed.goals) {
-      await query('UPDATE goals SET lower_is_better = $1 WHERE id = $2', [g.lower_is_better || 0, g.id]);
-    }
-    console.log('[fix] goal flags updated');
-  } catch (e) { console.error('[fix] goal flags error:', e.message); }
-}
-
-// Create calendar_events table if it doesn't exist
-async function createEventsTable() {
-  try {
-    await query(`CREATE TABLE IF NOT EXISTS calendar_events (
-      id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL,
-      start_date TEXT NOT NULL,
-      end_date TEXT NOT NULL,
-      color TEXT NOT NULL DEFAULT '#6ea8ff',
-      notes TEXT DEFAULT ''
-    )`);
-    await query(`ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT ''`);
-    await query(`ALTER TABLE daily_notes ADD COLUMN IF NOT EXISTS emojis TEXT DEFAULT ''`);
-    console.log('[init] calendar_events table ready');
-  } catch (e) { console.error('[init] calendar_events error:', e.message); }
-}
-
-// GET all events
-app.get('/api/events', async (req, res) => {
-  try {
-    const { rows } = await query(`SELECT id, name, start_date, end_date, color, notes FROM calendar_events ORDER BY start_date ASC`);
-    res.json({ events: rows });
+    res.json({ events: db.prepare(
+      `SELECT id, name, start_date, end_date, color, notes FROM calendar_events ORDER BY start_date ASC`
+    ).all() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST create event
-app.post('/api/events', async (req, res) => {
+app.post('/api/events', (req, res) => {
   try {
     const { name, start_date, end_date, color, notes = '' } = req.body;
     if (!name || !start_date || !end_date || !color) return res.status(400).json({ error: 'Missing fields' });
-    const { rows } = await query(
-      `INSERT INTO calendar_events (name, start_date, end_date, color, notes) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [name, start_date, end_date, color, notes]
-    );
-    res.json({ event: rows[0] });
+    const row = db.prepare(
+      `INSERT INTO calendar_events (name, start_date, end_date, color, notes) VALUES (?,?,?,?,?) RETURNING *`
+    ).get(name, start_date, end_date, color, notes);
+    res.json({ event: row });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PUT update event
-app.put('/api/events/:id', async (req, res) => {
+app.put('/api/events/:id', (req, res) => {
   try {
     const { name, start_date, end_date, color, notes = '' } = req.body;
     if (!name || !start_date || !end_date || !color) return res.status(400).json({ error: 'Missing fields' });
-    const { rows } = await query(
-      `UPDATE calendar_events SET name=$1, start_date=$2, end_date=$3, color=$4, notes=$5 WHERE id=$6 RETURNING *`,
-      [name, start_date, end_date, color, notes, req.params.id]
-    );
-    res.json({ event: rows[0] });
+    const row = db.prepare(
+      `UPDATE calendar_events SET name=?, start_date=?, end_date=?, color=?, notes=? WHERE id=? RETURNING *`
+    ).get(name, start_date, end_date, color, notes, req.params.id);
+    res.json({ event: row });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// DELETE event
-app.delete('/api/events/:id', async (req, res) => {
+app.delete('/api/events/:id', (req, res) => {
   try {
-    await query(`DELETE FROM calendar_events WHERE id = $1`, [req.params.id]);
+    db.prepare(`DELETE FROM calendar_events WHERE id = ?`).run(req.params.id);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Create surf_sessions table (multi-session support)
-async function createSurfSessionsTable() {
+// ─── SURF SESSIONS ────────────────────────────────────────────────────────────
+app.get('/api/surf-sessions', (req, res) => {
   try {
-    await query(`CREATE TABLE IF NOT EXISTS surf_sessions (
-      date TEXT PRIMARY KEY,
-      quality INTEGER,
-      wave_size NUMERIC,
-      swell_direction TEXT DEFAULT '',
-      swell_stats TEXT DEFAULT '',
-      location TEXT DEFAULT '',
-      notes TEXT DEFAULT ''
-    )`);
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS surfboard TEXT DEFAULT ''`);
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS swell_secondary TEXT DEFAULT ''`);
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS wave_size_min NUMERIC`);
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS wave_size_max NUMERIC`);
-    await query(`ALTER TABLE surf_sessions ALTER COLUMN quality TYPE NUMERIC USING quality::NUMERIC`).catch(() => {});
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS wave_size TEXT DEFAULT ''`);
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS tide TEXT DEFAULT ''`);
-    try { await query(`ALTER TABLE surf_sessions ALTER COLUMN wave_size TYPE TEXT USING wave_size::TEXT`); } catch(_) {}
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS wind TEXT DEFAULT ''`);
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS texture TEXT DEFAULT ''`);
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS time_start TEXT DEFAULT ''`);
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS time_end TEXT DEFAULT ''`);
-    // Migrate: shift primary key from date → id to support multiple sessions per day
-    await query(`ALTER TABLE surf_sessions ADD COLUMN IF NOT EXISTS id SERIAL`);
-    try { await query(`ALTER TABLE surf_sessions DROP CONSTRAINT surf_sessions_pkey`); } catch(_) {}
-    try { await query(`ALTER TABLE surf_sessions ADD PRIMARY KEY (id)`); } catch(_) {}
-    console.log('[init] surf_sessions table ready');
-  } catch (e) { console.error('[init] surf_sessions error:', e.message); }
-}
-
-// GET all surf sessions (journal)
-app.get('/api/surf-sessions', async (req, res) => {
-  try {
-    const { rows } = await query(
-      `SELECT * FROM surf_sessions ORDER BY date DESC, id DESC`
-    );
-    res.json(rows);
+    res.json(db.prepare(`SELECT * FROM surf_sessions ORDER BY date DESC, id DESC`).all());
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET all sessions for a date
-app.get('/api/surf-sessions/:date', async (req, res) => {
+app.get('/api/surf-sessions/:date', (req, res) => {
   try {
-    const { rows } = await query(
-      `SELECT * FROM surf_sessions WHERE date = $1 ORDER BY id ASC`,
-      [req.params.date]
-    );
-    res.json(rows);
+    res.json(db.prepare(`SELECT * FROM surf_sessions WHERE date = ? ORDER BY id ASC`).all(req.params.date));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST — create new session
-app.post('/api/surf-session', async (req, res) => {
+app.post('/api/surf-session', (req, res) => {
   try {
-    const { date, quality, wave_size = '', tide = '', swell_direction = '', swell_secondary = '', location = '', notes = '', surfboard = '', wind = '', time_start = '', time_end = '' } = req.body;
+    const { date, quality, wave_size = '', tide = '', swell_direction = '', swell_secondary = '',
+            location = '', notes = '', surfboard = '', wind = '', texture = '',
+            time_start = '', time_end = '' } = req.body;
     if (!date) return res.status(400).json({ error: 'date required' });
     if (quality != null && (quality < 1 || quality > 4)) return res.status(400).json({ error: 'quality must be 1–4' });
-    const { rows } = await query(
-      `INSERT INTO surf_sessions (date, quality, wave_size, tide, swell_direction, swell_secondary, location, notes, surfboard, wind, time_start, time_end)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
-      [date, quality || null, wave_size, tide, swell_direction, swell_secondary, location, notes, surfboard, wind, time_start, time_end]
-    );
-    res.json({ ok: true, id: rows[0].id });
+    const r = db.prepare(
+      `INSERT INTO surf_sessions
+       (date, quality, wave_size, tide, swell_direction, swell_secondary, location, notes, surfboard, wind, texture, time_start, time_end)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`
+    ).run(date, quality || null, wave_size, tide, swell_direction, swell_secondary, location, notes, surfboard, wind, texture, time_start, time_end);
+    res.json({ ok: true, id: r.lastInsertRowid });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PUT — update session by id
-app.put('/api/surf-session/:id', async (req, res) => {
+app.put('/api/surf-session/:id', (req, res) => {
   try {
-    const { quality, wave_size = '', tide = '', swell_direction = '', swell_secondary = '', location = '', notes = '', surfboard = '', wind = '', time_start = '', time_end = '' } = req.body;
+    const { quality, wave_size = '', tide = '', swell_direction = '', swell_secondary = '',
+            location = '', notes = '', surfboard = '', wind = '', texture = '',
+            time_start = '', time_end = '' } = req.body;
     if (quality != null && (quality < 1 || quality > 4)) return res.status(400).json({ error: 'quality must be 1–4' });
-    await query(
-      `UPDATE surf_sessions SET quality=$1, wave_size=$2, tide=$3, swell_direction=$4, swell_secondary=$5, location=$6, notes=$7, surfboard=$8, wind=$9, time_start=$10, time_end=$11
-       WHERE id=$12`,
-      [quality || null, wave_size, tide, swell_direction, swell_secondary, location, notes, surfboard, wind, time_start, time_end, req.params.id]
-    );
+    db.prepare(
+      `UPDATE surf_sessions SET quality=?, wave_size=?, tide=?, swell_direction=?, swell_secondary=?,
+       location=?, notes=?, surfboard=?, wind=?, texture=?, time_start=?, time_end=?
+       WHERE id=?`
+    ).run(quality || null, wave_size, tide, swell_direction, swell_secondary, location, notes, surfboard, wind, texture, time_start, time_end, req.params.id);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// DELETE — remove session by id
-app.delete('/api/surf-session/:id', async (req, res) => {
+app.delete('/api/surf-session/:id', (req, res) => {
   try {
-    await query(`DELETE FROM surf_sessions WHERE id = $1`, [req.params.id]);
+    db.prepare(`DELETE FROM surf_sessions WHERE id = ?`).run(req.params.id);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-initDb()
-  .then(seedIfEmpty)
-  .then(fixGoalFlags)
-  .then(createEventsTable)
-  .then(createSurfSessionsTable)
-  .then(() => {
-    app.listen(PORT, () => console.log(`Goals tracker running on http://localhost:${PORT}`));
-  });
+app.listen(PORT, () => console.log(`Goals tracker running on http://localhost:${PORT}`));
