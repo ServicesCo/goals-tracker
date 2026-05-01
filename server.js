@@ -474,6 +474,37 @@ app.get('/api/emojis', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── DATABASE INIT ────────────────────────────────────────────────────────────
+async function initDb() {
+  try {
+    await query(`CREATE TABLE IF NOT EXISTS goals (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      priority TEXT,
+      category TEXT,
+      description TEXT,
+      metric TEXT,
+      kpi NUMERIC,
+      unit TEXT,
+      lower_is_better INTEGER DEFAULT 0
+    )`);
+    await query(`CREATE TABLE IF NOT EXISTS daily_logs (
+      id SERIAL PRIMARY KEY,
+      goal_id INTEGER REFERENCES goals(id),
+      date TEXT NOT NULL,
+      value NUMERIC NOT NULL,
+      logged_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(goal_id, date)
+    )`);
+    await query(`CREATE TABLE IF NOT EXISTS daily_notes (
+      date TEXT PRIMARY KEY,
+      note TEXT DEFAULT '',
+      emojis TEXT DEFAULT ''
+    )`);
+    console.log('[init] core tables ready');
+  } catch (e) { console.error('[init] initDb error:', e.message); }
+}
+
 // ─── STARTUP SEED ─────────────────────────────────────────────────────────────
 // If production DB is empty, seed it from db-export.json (generated from dev DB)
 async function seedIfEmpty() {
@@ -673,7 +704,8 @@ app.delete('/api/surf-session/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-seedIfEmpty()
+initDb()
+  .then(seedIfEmpty)
   .then(fixGoalFlags)
   .then(createEventsTable)
   .then(createSurfSessionsTable)
