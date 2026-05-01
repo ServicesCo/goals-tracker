@@ -371,18 +371,26 @@ app.post('/api/log/daily', (req, res) => {
 });
 
 // GET meta (week, day, market data)
-app.get('/api/meta', async (req, res) => {
+app.get('/api/meta', (req, res) => {
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const dayOfYear = Math.floor((now - startOfYear) / 86400000) + 1;
   const week = Math.ceil(dayOfYear / 7);
   const pctOfYear = ((dayOfYear / 365) * 100).toFixed(1);
+  res.json({
+    week, dayOfYear, pctOfYear,
+    date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    market: { sp500: '—', vti: '—' }
+  });
+});
 
-  let market = { sp500: '—', vti: '—' };
+app.get('/api/market', async (req, res) => {
+  const now = new Date();
+  const yr  = now.getFullYear();
+  const d1  = `${yr}0101`;
+  const d2  = `${yr}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const market = { sp500: '—', vti: '—' };
   try {
-    const yr  = now.getFullYear();
-    const d1  = `${yr}0101`;
-    const d2  = `${yr}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
     function ytdFromCsv(csv) {
       const rows = csv.trim().split('\n').slice(1)
         .filter(r => r.includes(','))
@@ -405,12 +413,7 @@ app.get('/api/meta', async (req, res) => {
     if (spRes  && spRes.ok)  { const v = ytdFromCsv(await spRes.text());  if (v) market.sp500 = v; }
     if (vtiRes && vtiRes.ok) { const v = ytdFromCsv(await vtiRes.text()); if (v) market.vti   = v; }
   } catch (e) {}
-
-  res.json({
-    week, dayOfYear, pctOfYear,
-    date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    market
-  });
+  res.json(market);
 });
 
 // GET year-view data for 2026

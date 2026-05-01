@@ -699,26 +699,37 @@
 
   async function init() {
     try {
-      const [goals, logs, meta, streaks] = await Promise.all([
+      // Compute static meta locally — no round-trip needed
+      const now = new Date();
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const dayOfYear = Math.floor((now - startOfYear) / 86400000) + 1;
+      state.meta = {
+        week: Math.ceil(dayOfYear / 7),
+        dayOfYear,
+        pctOfYear: ((dayOfYear / 365) * 100).toFixed(1),
+        date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        market: { sp500: '—', vti: '—' }
+      };
+
+      const [goals, logs, streaks] = await Promise.all([
         apiFetch('/api/goals'),
         apiFetch('/api/logs'),
-        apiFetch('/api/meta'),
         apiFetch('/api/streaks'),
-        loadAllRawLogs(),
       ]);
       if (!goals) return;
       state.goals = goals;
       state.logs = logs || [];
-      state.meta = meta || {};
-
-      const now = new Date();
       state.logMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
       renderDashboard();
       renderStreaks(streaks);
-      renderTrends();
       document.getElementById('loading').style.opacity = '0';
       setTimeout(() => document.getElementById('loading').style.display = 'none', 400);
+
+      // Background: fetch market data and refresh dashboard when ready
+      apiFetch('/api/market').then(market => {
+        if (market) { state.meta.market = market; renderDashboard(); }
+      });
     } catch (e) { console.error(e); }
   }
 
@@ -1130,8 +1141,8 @@
     showAutoSaveStatus('Exported month');
   }
 
-  function exportAllCSV() {
-    // Reads from already-loaded data (state.allRawLogs) — no API calls.
+  async function exportAllCSV() {
+    if (!state.allRawLogs || state.allRawLogs.length === 0) await loadAllRawLogs();
     const allRows = (state.allRawLogs || []).slice();
     allRows.sort((a, b) => a.date.localeCompare(b.date) || a.goal_id - b.goal_id);
 
@@ -2615,7 +2626,7 @@
 
   // ── EXPORT BUTTONS ────────────────────────────────────────────────────────
   document.getElementById('export-month').onclick = exportMonthCSV;
-  document.getElementById('export-all').onclick   = exportAllCSV;
+  document.getElementById('export-all').onclick   = () => exportAllCSV();
 
   init();
 </script>
