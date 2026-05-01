@@ -711,18 +711,14 @@
         market: { sp500: '—', vti: '—' }
       };
 
-      const [goals, logs, streaks] = await Promise.all([
-        apiFetch('/api/goals'),
-        apiFetch('/api/logs'),
-        apiFetch('/api/streaks'),
-      ]);
-      if (!goals) return;
-      state.goals = goals;
-      state.logs = logs || [];
+      const initData = await apiFetch('/api/init');
+      if (!initData) return;
+      state.goals = initData.goals;
+      state.logs  = initData.logs || [];
       state.logMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
       renderDashboard();
-      renderStreaks(streaks);
+      renderStreaks(initData.streaks);
       document.getElementById('loading').style.opacity = '0';
       setTimeout(() => document.getElementById('loading').style.display = 'none', 400);
 

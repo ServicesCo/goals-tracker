@@ -152,6 +152,83 @@ app.get('/api/goals', (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET everything needed for initial page load in one request
+app.get('/api/init', (req, res) => {
+  try {
+    const goals = db.prepare('SELECT * FROM goals ORDER BY id').all();
+
+    // --- logs (same logic as /api/logs) ---
+    const now       = new Date();
+    const yearStart = `${now.getFullYear()}-01-01`;
+    const today     = now.toISOString().slice(0, 10);
+    const logStmt   = db.prepare(
+      'SELECT date, value FROM daily_logs WHERE goal_id = ? AND date >= ? AND date <= ? ORDER BY date ASC'
+    );
+    const logs = [];
+    for (const g of goals) {
+      if (g.id === 12) continue;
+      const rows = logStmt.all(g.id, yearStart, today);
+      if (rows.length === 0) continue;
+      const vals = rows.map(r => parseFloat(r.value));
+      let value;
+      if (g.id === 5) {
+        value = vals[vals.length - 1];
+      } else if (CUMULATIVE_GOALS.includes(g.id)) {
+        value = vals.reduce((s, v) => s + v, 0);
+      } else if (AVERAGE_GOALS.includes(g.id)) {
+        value = vals.reduce((s, v) => s + v, 0) / vals.length;
+      } else if (WEEKLY_COUNT_GOALS.includes(g.id)) {
+        const total = vals.reduce((s, v) => s + v, 0);
+        const weeksElapsed = Math.max(1, Math.floor(
+          (now - new Date(now.getFullYear(), 0, 1)) / (7 * 86400000)
+        ));
+        value = total / weeksElapsed;
+      } else {
+        value = vals[vals.length - 1];
+      }
+      const entry = { goal_id: g.id, value: parseFloat(value.toFixed(2)), date: rows[rows.length - 1].date };
+      if (g.id === 6) entry.days = vals.filter(v => v > 0).length;
+      logs.push(entry);
+    }
+
+    // --- streaks (same logic as /api/streaks) ---
+    const habitGoals = [
+      { id: 6,  label: 'Exercise',     fn: v => v >= 1 },
+      { id: 3,  label: 'Surf',         fn: v => v > 0 },
+      { id: 10, label: 'Stretching',   fn: v => v > 0 },
+      { id: 11, label: 'Alcohol-free', fn: v => v === 0, missingIsPass: true },
+      { id: 2,  label: 'Screen time',  fn: v => v <= 1.5 },
+    ];
+    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+    const todayStr  = todayDate.toISOString().split('T')[0];
+    const streakStmt = db.prepare(
+      `SELECT date, value FROM daily_logs WHERE goal_id = ? AND date >= '2026-01-01' ORDER BY date DESC`
+    );
+    const streaks = [];
+    for (const goal of habitGoals) {
+      const rows = streakStmt.all(goal.id);
+      const logMap = {};
+      for (const row of rows) logMap[row.date] = parseFloat(row.value);
+      let streak = 0;
+      const start = new Date(todayDate);
+      if (!(todayStr in logMap) && !goal.missingIsPass) start.setDate(start.getDate() - 1);
+      const cur = new Date(start);
+      while (true) {
+        const ds = cur.toISOString().split('T')[0];
+        if (ds < '2026-01-01') break;
+        const hasLog = ds in logMap;
+        if (!hasLog && !goal.missingIsPass) break;
+        if (hasLog && !goal.fn(logMap[ds])) break;
+        streak++;
+        cur.setDate(cur.getDate() - 1);
+      }
+      streaks.push({ id: goal.id, label: goal.label, streak });
+    }
+
+    res.json({ goals, logs, streaks });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET full trends data (monthly, quarterly, weekly) for a goal
 app.get('/api/logs/trends/:goalId', (req, res) => {
   try {
