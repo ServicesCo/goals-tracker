@@ -1,0 +1,1340 @@
+{
+  "goals": [
+    {
+      "id": 1,
+      "name": "Save $100k",
+      "priority": "high",
+      "category": "Wealth",
+      "description": "Contribute $100k+ to my 401(k), HSA, individual brokerage accounts",
+      "metric": "Amount invested ($k)",
+      "kpi": 100,
+      "unit": "k",
+      "lower_is_better": 0
+    },
+    {
+      "id": 2,
+      "name": "Screen Time",
+      "priority": "high",
+      "category": "Health/Wellness",
+      "description": "<1.5hrs of phone time (excluding work) per day",
+      "metric": "Daily screen time (hrs)",
+      "kpi": 1.5,
+      "unit": "hrs",
+      "lower_is_better": 1
+    },
+    {
+      "id": 3,
+      "name": "Surf",
+      "priority": "high",
+      "category": "Passion/Fun",
+      "description": "Surf 150 hours in 2026. Maximize days in the water.",
+      "metric": "Hours surfed",
+      "kpi": 150,
+      "unit": "hrs",
+      "lower_is_better": 0
+    },
+    {
+      "id": 4,
+      "name": "Work Life Balance",
+      "priority": "high",
+      "category": "Career",
+      "description": "Work less than 50 hours per week on average",
+      "metric": "Weekly hours worked",
+      "kpi": 50,
+      "unit": "hrs",
+      "lower_is_better": 1
+    },
+    {
+      "id": 5,
+      "name": "Beat the Market",
+      "priority": "medium",
+      "category": "Wealth",
+      "description": "Beat the market benchmark (S&P500) across my primary Fidelity brokerage",
+      "metric": "YTD portfolio return (%)",
+      "kpi": null,
+      "unit": "%",
+      "lower_is_better": 0
+    },
+    {
+      "id": 6,
+      "name": "Exercise",
+      "priority": "medium",
+      "category": "Health/Wellness",
+      "description": "1 hour of exercise a day on average; exercise 275 days in the year",
+      "metric": "Daily exercise hours",
+      "kpi": 1,
+      "unit": "hrs",
+      "lower_is_better": 0
+    },
+    {
+      "id": 7,
+      "name": "Family",
+      "priority": "medium",
+      "category": "Relationships",
+      "description": "Call or see family 2x per week",
+      "metric": "Family catch-ups",
+      "kpi": 2,
+      "unit": "",
+      "lower_is_better": 0
+    },
+    {
+      "id": 8,
+      "name": "Friends",
+      "priority": "medium",
+      "category": "Relationships",
+      "description": "Catch-up with 2 close friends every week",
+      "metric": "Friend catch-ups",
+      "kpi": 2,
+      "unit": "",
+      "lower_is_better": 0
+    },
+    {
+      "id": 9,
+      "name": "Reading",
+      "priority": "lower",
+      "category": "Health/Wellness",
+      "description": "Read 15 books in 2026",
+      "metric": "Books read",
+      "kpi": 15,
+      "unit": "",
+      "lower_is_better": 0
+    },
+    {
+      "id": 10,
+      "name": "Stretching",
+      "priority": "lower",
+      "category": "Health/Wellness",
+      "description": "Stretch 3x a week for 10-20 minutes",
+      "metric": "Stretch sessions",
+      "kpi": 3,
+      "unit": "",
+      "lower_is_better": 0
+    },
+    {
+      "id": 11,
+      "name": "Alcohol Consumption",
+      "priority": "lower",
+      "category": "Health/Wellness",
+      "description": "Drink no more than once per week on average.",
+      "metric": "Days drinking / wk",
+      "kpi": 1,
+      "unit": "",
+      "lower_is_better": 1
+    },
+    {
+      "id": 12,
+      "name": "Other Hobbies",
+      "priority": "lower",
+      "category": "Passion/Fun",
+      "description": "Explore, ski, take action, get adventure, don't be stagnant, guitar",
+      "metric": "Qualitative",
+      "kpi": null,
+      "unit": "",
+      "lower_is_better": 0
+    },
+    {
+      "id": 13,
+      "name": "Surf Sessions",
+      "priority": "high",
+      "category": "Passion/Fun",
+      "description": "Number of surf sessions in 2026",
+      "metric": "Surf sessions",
+      "kpi": null,
+      "unit": "",
+      "lower_is_better": 0
+    }
+  ],
+  "logs": [
+    {
+      "goal_id": 1,
+      "date": "2026-01-01",
+      "value": 12
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-01",
+      "value": 0.6666667
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-01",
+      "value": 0
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-01",
+      "value": 0
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-01",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-02",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-02",
+      "value": 0
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-02",
+      "value": 1.33
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-02",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-03",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-03",
+      "value": 0
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-03",
+      "value": 1
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-03",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-04",
+      "value": 5.366667
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-01-04",
+      "value": 2.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-04",
+      "value": 25
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-04",
+      "value": 2.5
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-04",
+      "value": 1
+    },
+    {
+      "goal_id": 8,
+      "date": "2026-01-04",
+      "value": 2
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-01-04",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-05",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-05",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-05",
+      "value": 1.333
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-05",
+      "value": 1
+    },
+    {
+      "goal_id": 1,
+      "date": "2026-01-06",
+      "value": 5
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-06",
+      "value": 3
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-01-06",
+      "value": 1.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-06",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-06",
+      "value": 2
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-06",
+      "value": 1
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-01-06",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-07",
+      "value": 3.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-07",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-07",
+      "value": 1
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-07",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-08",
+      "value": 4
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-08",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-08",
+      "value": 1
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-08",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-09",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-09",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-09",
+      "value": 1.33
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-10",
+      "value": 1.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-10",
+      "value": 0
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-10",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-11",
+      "value": 0.5
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-01-11",
+      "value": 1.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-11",
+      "value": 0
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-11",
+      "value": 1.5
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-12",
+      "value": 3
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-12",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-12",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-13",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-13",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-13",
+      "value": 0
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-13",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-14",
+      "value": 1
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-14",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-14",
+      "value": 0
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-01-14",
+      "value": 1
+    },
+    {
+      "goal_id": 1,
+      "date": "2026-01-15",
+      "value": 3
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-15",
+      "value": 0.75
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-15",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-15",
+      "value": 1
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-15",
+      "value": 1
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-01-15",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-16",
+      "value": 0.333
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-16",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-16",
+      "value": 1.2
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-16",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-17",
+      "value": 0.75
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-17",
+      "value": 6
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-17",
+      "value": 1.7
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-17",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-18",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-18",
+      "value": 6
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-18",
+      "value": 1
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-18",
+      "value": 1
+    },
+    {
+      "goal_id": 8,
+      "date": "2026-01-18",
+      "value": 2
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-01-18",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-19",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-19",
+      "value": 9
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-19",
+      "value": 1.35
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-20",
+      "value": 1.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-20",
+      "value": 11
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-20",
+      "value": 1.35
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-21",
+      "value": 1
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-21",
+      "value": 11
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-21",
+      "value": 1.15
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-21",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-22",
+      "value": 0.75
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-01-22",
+      "value": 3
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-22",
+      "value": 11
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-22",
+      "value": 3
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-22",
+      "value": 1
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-01-22",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-23",
+      "value": 0.75
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-01-23",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-23",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-23",
+      "value": 2.5
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-01-23",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-24",
+      "value": 1.2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-24",
+      "value": 0.5
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-24",
+      "value": 2
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-25",
+      "value": 1
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-01-25",
+      "value": 3.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-25",
+      "value": 0.5
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-25",
+      "value": 3.5
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-25",
+      "value": 1
+    },
+    {
+      "goal_id": 8,
+      "date": "2026-01-25",
+      "value": 1
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-01-25",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-26",
+      "value": 1
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-01-26",
+      "value": 1
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-26",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-26",
+      "value": 1
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-01-26",
+      "value": 1
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-01-26",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-27",
+      "value": 1.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-27",
+      "value": 11
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-27",
+      "value": 1.2
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-28",
+      "value": 1.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-28",
+      "value": 11
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-28",
+      "value": 0
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-29",
+      "value": 0.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-29",
+      "value": 10
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-29",
+      "value": 0
+    },
+    {
+      "goal_id": 1,
+      "date": "2026-01-30",
+      "value": 5
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-30",
+      "value": 1.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-30",
+      "value": 10
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-30",
+      "value": 1.5
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-01-31",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-01-31",
+      "value": 10
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-01-31",
+      "value": 1.5
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-01",
+      "value": 2.33
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-01",
+      "value": 5
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-01",
+      "value": 0
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-02",
+      "value": 2.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-02",
+      "value": 10
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-02",
+      "value": 0
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-03",
+      "value": 3
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-03",
+      "value": 8
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-03",
+      "value": 0
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-04",
+      "value": 1.5
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-02-04",
+      "value": 2.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-04",
+      "value": 1
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-04",
+      "value": 2.5
+    },
+    {
+      "goal_id": 8,
+      "date": "2026-02-04",
+      "value": 3
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-02-04",
+      "value": 1
+    },
+    {
+      "goal_id": 13,
+      "date": "2026-02-04",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-05",
+      "value": 3
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-05",
+      "value": 5
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-05",
+      "value": 0
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-06",
+      "value": 1
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-06",
+      "value": 2
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-06",
+      "value": 3
+    },
+    {
+      "goal_id": 11,
+      "date": "2026-02-06",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-07",
+      "value": 1.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-07",
+      "value": 4
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-07",
+      "value": 1
+    },
+    {
+      "goal_id": 11,
+      "date": "2026-02-07",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-08",
+      "value": 1
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-08",
+      "value": 4
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-08",
+      "value": 3.5
+    },
+    {
+      "goal_id": 11,
+      "date": "2026-02-08",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-09",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-09",
+      "value": 10
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-09",
+      "value": 0
+    },
+    {
+      "goal_id": 11,
+      "date": "2026-02-09",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-10",
+      "value": 6.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-10",
+      "value": 10
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-10",
+      "value": 0
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-11",
+      "value": 5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-11",
+      "value": 10
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-11",
+      "value": 2
+    },
+    {
+      "goal_id": 8,
+      "date": "2026-02-11",
+      "value": 1
+    },
+    {
+      "goal_id": 1,
+      "date": "2026-02-12",
+      "value": 3
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-12",
+      "value": 3
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-12",
+      "value": 10
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-12",
+      "value": 1.2
+    },
+    {
+      "goal_id": 1,
+      "date": "2026-02-13",
+      "value": 1.5
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-13",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-13",
+      "value": 5
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-13",
+      "value": 2
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-14",
+      "value": 3.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-14",
+      "value": 0
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-14",
+      "value": 1.2
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-15",
+      "value": 2
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-15",
+      "value": 0
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-15",
+      "value": 1.25
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-02-15",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-16",
+      "value": 3
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-16",
+      "value": 3
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-16",
+      "value": 1.5
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-17",
+      "value": 4.5
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-02-17",
+      "value": 4.25
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-17",
+      "value": 1
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-17",
+      "value": 4.25
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-02-17",
+      "value": 1
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-02-17",
+      "value": 1
+    },
+    {
+      "goal_id": 11,
+      "date": "2026-02-17",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-18",
+      "value": 4.75
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-02-18",
+      "value": 1.75
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-18",
+      "value": 5.5
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-18",
+      "value": 1.75
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-02-18",
+      "value": 1
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-02-18",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-19",
+      "value": 5
+    },
+    {
+      "goal_id": 3,
+      "date": "2026-02-19",
+      "value": 1.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-19",
+      "value": 3
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-19",
+      "value": 1.5
+    },
+    {
+      "goal_id": 7,
+      "date": "2026-02-19",
+      "value": 1
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-02-19",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-20",
+      "value": 5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-20",
+      "value": 2
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-20",
+      "value": 0.5
+    },
+    {
+      "goal_id": 8,
+      "date": "2026-02-20",
+      "value": 1
+    },
+    {
+      "goal_id": 11,
+      "date": "2026-02-20",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-21",
+      "value": 5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-21",
+      "value": 0
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-21",
+      "value": 0
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-22",
+      "value": 5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-22",
+      "value": 0
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-22",
+      "value": 1.25
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-02-22",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-23",
+      "value": 1
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-23",
+      "value": 3
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-23",
+      "value": 2.5
+    },
+    {
+      "goal_id": 10,
+      "date": "2026-02-23",
+      "value": 1
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-24",
+      "value": 0.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-24",
+      "value": 3
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-24",
+      "value": 1.25
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-25",
+      "value": 0.5
+    },
+    {
+      "goal_id": 4,
+      "date": "2026-02-25",
+      "value": 6
+    },
+    {
+      "goal_id": 6,
+      "date": "2026-02-25",
+      "value": 1.5
+    },
+    {
+      "goal_id": 1,
+      "date": "2026-02-26",
+      "value": 3
+    },
+    {
+      "goal_id": 2,
+      "date": "2026-02-26",
+      "value": 0.5
+    },
+    {
+      "goal_id": 5,
+      "date": "2026-02-26",
+      "value": 10
+    }
+  ],
+  "notes": [
+    {
+      "date": "2026-01-01",
+      "note": "Test note for this day"
+    }
+  ]
+}
