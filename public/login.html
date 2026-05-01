@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — 2026 Goals</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0f172a; --surface:#1e293b; --surface2:#273548; --border:#334155; --text:#e8e8f2; --muted:#64647a; --accent:#7fff6e; --warn:#ff5f5f; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 32px; width: 320px; }
+  h1 { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: var(--muted); margin-bottom: 22px; }
+  label { display: block; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 6px; }
+  input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; padding: 10px 12px; outline: none; }
+  input:focus { border-color: var(--accent); }
+  button { width: 100%; margin-top: 14px; background: var(--accent); color: #0f172a; border: none; border-radius: 6px; padding: 10px; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 13px; cursor: pointer; }
+  button:hover { opacity: 0.9; }
+  .err { color: var(--warn); font-family: 'DM Mono', monospace; font-size: 11px; margin-top: 10px; min-height: 14px; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>2026 Goals</h1>
+    <div class="sub">Sign in to continue</div>
+    <label for="pwd">Password</label>
+    <input id="pwd" type="password" autofocus>
+    <button id="go">Sign in</button>
+    <div class="err" id="err"></div>
+  </div>
+<script>
+  const pwdEl = document.getElementById('pwd');
+  const errEl = document.getElementById('err');
+  async function login() {
+    const pwd = pwdEl.value;
+    if (!pwd) return;
+    errEl.textContent = '';
+    const res = await fetch(`/api/auth/check?pwd=${encodeURIComponent(pwd)}`);
+    const data = await res.json();
+    if (data.ok) {
+      sessionStorage.setItem('goals_pwd', pwd);
+      window.location.href = '/';
+    } else {
+      errEl.textContent = 'Incorrect password';
+    }
+  }
+  document.getElementById('go').addEventListener('click', login);
+  pwdEl.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>
