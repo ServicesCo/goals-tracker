@@ -1,0 +1,2623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 Goals</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --surface2: #273548; --border: #334155;
+    --text: #e8e8f2; --muted: #64647a; --accent: #7fff6e; --warn: #ff5f5f;
+    --yellow: #ffd166; --blue: #6ea8ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; }
+  body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(127,255,110,0.04) 0%, transparent 70%); }
+  .app { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 44px 24px 100px; }
+
+  /* LOADING */
+  #loading { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.4s; }
+  .loader-text { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 4px; color: var(--muted); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  /* HEADER */
+  header { margin-bottom: 44px; }
+  .header-row { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+  h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(32px, 5vw, 48px); line-height: 1; letter-spacing: 2px; color: var(--text); }
+  .header-subtitle { font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 13px; color: var(--muted); margin-top: 5px; font-style: italic; }
+  .header-right { text-align: right; }
+  .week-badge { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); border: 1px solid var(--border); padding: 5px 12px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+  .date-str { font-size: 13px; color: var(--muted); }
+
+  /* NAV */
+  nav { display: flex; gap: 4px; margin-bottom: 32px; }
+  .tab { background: none; border: 1px solid transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 18px; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+  .tab.active { background: var(--surface2); border-color: var(--border); color: var(--text); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* VIEWS */
+  .view { display: none; animation: fadeIn 0.2s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+  /* DASHBOARD TOP ROW */
+  .dashboard-top { display: flex; gap: 12px; margin-bottom: 20px; align-items: stretch; }
+  .dashboard-top .summary-table-wrap { margin-bottom: 0; }
+  .dash-stat-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; min-width: 240px; overflow: hidden; }
+  .dash-yr-bar { padding: 18px 20px; }
+  .dash-stat-grid { display: grid; grid-template-columns: 1fr 1fr; flex: 1; }
+  .dash-stat { padding: 13px 16px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+  .dash-stat:nth-child(2n) { border-right: none; }
+  .dash-stat:nth-last-child(-n+2) { border-bottom: none; }
+  .dash-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 30px; line-height: 1; margin-bottom: 3px; color: var(--text); }
+  .dash-stat-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+
+  /* STREAK PANEL */
+  .streak-panel { align-self: flex-start; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); padding: 12px 16px; min-width: 180px; }
+  .streak-panel-title { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text); font-weight: 600; margin-bottom: 12px; }
+  .streak-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 8px; }
+  .streak-row:last-child { margin-bottom: 0; }
+  .streak-label { font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .streak-val { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 600; color: var(--accent); }
+  .streak-val.zero { color: var(--muted); font-weight: 300; }
+
+  /* SUMMARY TABLE */
+  .summary-table-wrap { align-self: flex-start; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 20px; background: var(--surface); }
+  .summary-table { width: auto; border-collapse: collapse; background: var(--surface); }
+  .summary-table th { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; padding: 7px 12px; border-bottom: 1px solid var(--border); text-align: center; }
+  .summary-table th:first-child { text-align: left; color: var(--muted); }
+  .summary-table td { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 300; padding: 6px 12px; text-align: center; border-bottom: 1px solid var(--border); }
+  .summary-table .total-row td { font-weight: 700; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table .row-lbl { text-align: left; font-size: 10px; font-weight: 300; text-transform: uppercase; letter-spacing: 0.6px; }
+  .summary-table .row-lbl.high { color: var(--warn); }
+  .summary-table .row-lbl.medium { color: var(--yellow); }
+  .summary-table .row-lbl.lower { color: var(--muted); }
+  .summary-table .row-lbl.total { color: var(--text); font-weight: 700; }
+  .summary-table .total-row td { opacity: 0.85; }
+  .green { color: var(--accent); } .red { color: var(--warn); } .yellow { color: var(--yellow); } .blue { color: var(--blue); }
+
+  /* YEAR PROGRESS */
+  .yb-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); white-space: nowrap; }
+  .yb-track { flex: 1; height: 3px; background: var(--surface2); border-radius: 2px; }
+  .yb-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 1s ease; }
+  .yb-pct { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  /* GOAL CARDS GRID */
+  .goals-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .goal-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; display: flex; flex-direction: column; position: relative;
+    overflow: hidden; transition: border-color 0.15s;
+  }
+  .goal-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .goal-card.on-pace::before { background: var(--accent); }
+  .goal-card.lagging::before { background: var(--warn); }
+  .goal-card.tbd::before { background: var(--border); }
+  .goal-card:hover { border-color: #333344; }
+
+
+  .goal-body { flex: 1; }
+  .goal-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; justify-content: space-between; }
+  .goal-name { font-size: 15px; font-weight: 500; letter-spacing: 0.3px; }
+  .cat-tag { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); border: 1px solid var(--border); padding: 1px 7px; border-radius: 100px; flex-shrink: 0; }
+  .priority-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .priority-label.high { color: var(--warn); }
+  .priority-label.medium { color: var(--yellow); }
+  .priority-label.lower { color: var(--muted); }
+  .goal-desc { font-size: 11px; color: var(--muted); margin-bottom: 12px; line-height: 1.5; min-height: 3em; }
+  .goal-right { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .pct-big { font-family: 'Bebas Neue', sans-serif; font-size: 36px; line-height: 1; }
+  .pct-big.on-pace { color: var(--accent); } .pct-big.lagging { color: var(--warn); } .pct-big.tbd { color: var(--muted); }
+  .status-word { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+
+  .progress-row { display: flex; align-items: center; gap: 10px; }
+  .prog-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; position: relative; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .prog-fill.on-pace { background: linear-gradient(90deg, #5fb353, var(--accent)); }
+  .prog-fill.lagging { background: linear-gradient(90deg, #cc4b4b, var(--warn)); }
+  .prog-fill.tbd { background: var(--border); width: 0 !important; }
+  .pace-tick { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.2); z-index: 2; }
+  .prog-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); white-space: nowrap; font-weight: 500; }
+
+  /* MONTHLY LOG */
+  .monthly-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .month-nav-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: border-color 0.15s; }
+  .month-nav-btn:hover { border-color: var(--muted); }
+  .month-label { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; }
+  .autosave-status { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-left: auto; opacity: 0; transition: opacity 0.3s; }
+  .autosave-status.visible { opacity: 1; }
+  .autosave-status.error { color: var(--warn); }
+
+  .export-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.5px; transition: border-color 0.15s, background 0.15s; }
+  .export-btn:hover { border-color: var(--accent); background: var(--surface); }
+  .export-group { display: flex; gap: 8px; margin-left: auto; }
+  .monthly-header .autosave-status { margin-left: 0; }
+
+  .monthly-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+  .monthly-table { border-collapse: collapse; width: 100%; min-width: 900px; }
+  .monthly-table th, .monthly-table td { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .monthly-table tr:last-child td { border-bottom: none; }
+  .monthly-table th:last-child, .monthly-table td:last-child { border-right: none; }
+
+  .monthly-table thead th { background: var(--surface2); padding: 8px 4px; text-align: center; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); font-weight: 400; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+  .monthly-table thead th.goal-col { text-align: left; padding: 8px 14px; min-width: 160px; width: 160px; position: sticky; left: 0; z-index: 3; background: var(--surface2); }
+  .monthly-table thead th.today-col { color: var(--accent); background: rgba(127,255,110,0.05); }
+
+  .monthly-table tbody td.goal-name-cell {
+    background: var(--surface); padding: 8px 14px; font-size: 12px; font-weight: 500;
+    white-space: nowrap; position: sticky; left: 0; z-index: 1; border-right: 1px solid var(--border);
+    min-width: 160px; width: 160px;
+  }
+  .monthly-table tbody td.goal-unit { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); display: block; margin-top: 2px; }
+  .monthly-table tbody td.day-cell { padding: 3px; text-align: center; background: var(--surface); }
+  .monthly-table tbody td.day-cell.today-col { background: rgba(127,255,110,0.03); }
+  .monthly-table tbody td.day-cell.future-col { opacity: 0.4; }
+
+  .day-input {
+    width: 48px; background: transparent; border: 1px solid transparent; border-radius: 4px;
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px;
+    padding: 5px 3px; text-align: center; outline: none; transition: border-color 0.15s, background 0.15s;
+    -moz-appearance: textfield;
+  }
+  .day-input::-webkit-outer-spin-button, .day-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .day-input:focus { border-color: var(--accent); background: var(--surface2); }
+  .day-input.has-value { color: var(--accent); }
+
+  /* TRENDS */
+  .trends-container { display: flex; flex-direction: column; gap: 44px; }
+  .trend-section-header { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .trend-charts-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .trend-charts-row.one-col  { grid-template-columns: minmax(0, 420px); }
+  .trend-charts-row.full-col { grid-template-columns: 1fr; }
+  .trend-chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .trend-chart-title { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 12px; font-family: 'DM Mono', monospace; }
+
+  /* YEAR VIEW */
+  #calendar-layout { display: flex; gap: 16px; align-items: flex-start; }
+  #year-view-container { flex: 1 1 70%; min-width: 0; }
+  #notes-sidebar { flex: 0 0 360px; max-height: 82vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; position: sticky; top: 0; }
+  .notes-sidebar-header { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text); font-weight: 700; margin-bottom: 12px; }
+  .note-entry { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: opacity 0.15s; }
+  .note-entry:last-child { border-bottom: none; }
+  .note-entry:hover { opacity: 0.7; }
+  .note-entry-date { font-weight: 600; color: var(--text); white-space: nowrap; font-size: 11px; font-family: 'DM Mono', monospace; min-width: 42px; padding-top: 1px; }
+  .note-entry-text { color: var(--text); font-size: 11px; font-family: 'DM Mono', monospace; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.55; }
+  /* EVENTS */
+  .event-chips-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .event-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 100px; padding: 3px 10px 3px 7px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text); cursor: pointer; transition: border-color 0.15s; }
+  .event-chip:hover { border-color: var(--muted); }
+  .event-chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .event-chip-del { cursor: pointer; opacity: 0.45; margin-left: 2px; font-size: 12px; line-height: 1; transition: opacity 0.15s; }
+  .event-chip-del:hover { opacity: 1; }
+  .add-event-btn { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); background: none; border: 1px dashed var(--border); border-radius: 100px; padding: 3px 12px; cursor: pointer; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
+  .add-event-btn:hover { color: var(--text); border-color: var(--muted); }
+  .event-bars-wrap { position: absolute; bottom: 0; left: 0; right: 0; display: flex; flex-direction: column; gap: 1px; padding: 0 0 2px; pointer-events: none; }
+  .event-bar-ph { height: 8px; pointer-events: none; flex-shrink: 0; }
+  .event-bar { height: 8px; display: flex; align-items: center; font-family: 'DM Mono', monospace; font-size: 7px; color: #fff; font-weight: 700; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; pointer-events: auto; box-shadow: inset 0 0 0 999px rgba(0,0,0,0.22); transition: box-shadow 0.12s; border-top: 1px dotted rgba(255,255,255,0.4); border-bottom: 1px dotted rgba(255,255,255,0.4); }
+  .event-bar:hover { box-shadow: inset 0 0 0 999px rgba(0,0,0,0.05); }
+  .event-bar.ep-l  { border-radius: 5px 0 0 5px; border-left: 1px dotted rgba(255,255,255,0.4); }
+  .event-bar.ep-r  { border-radius: 0 5px 5px 0; border-right: 1px dotted rgba(255,255,255,0.4); }
+  .event-bar.ep-lr { border-radius: 5px; border-left: 1px dotted rgba(255,255,255,0.4); border-right: 1px dotted rgba(255,255,255,0.4); }
+  .event-bar.ep-xr { width: calc(100% + var(--grid-gap, 2px)); }
+  .event-bar.ep-xl { width: calc(100% + var(--grid-gap, 2px)); margin-left: calc(-1 * var(--grid-gap, 2px)); }
+  .event-bar.ep-xlr{ width: calc(100% + 2 * var(--grid-gap, 2px)); margin-left: calc(-1 * var(--grid-gap, 2px)); }
+  .event-bar.ep-l  { overflow: visible; position: relative; z-index: 10; }
+  /* COLOR SWATCHES */
+  .color-swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .color-swatch { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s; }
+  .color-swatch.selected { border-color: #fff; transform: scale(1.15); }
+  /* MODAL INPUT */
+  .modal-input { width: 100%; box-sizing: border-box; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px; padding: 8px 11px; outline: none; margin-bottom: 10px; }
+  .modal-input:focus { border-color: #475569; }
+  .modal-label { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 5px; display: block; }
+  /* MONTH DRILLDOWN */
+  #month-drilldown { display: none; }
+  #month-drilldown.open { display: block; }
+  #month-drilldown .event-bar { height: 11px; font-size: 9px; }
+  #month-drilldown .event-bar-ph { height: 11px; }
+  .drilldown-header { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .drilldown-back { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); background: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: color 0.15s; }
+  .drilldown-back:hover { color: var(--text); }
+  .drilldown-month-name { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 1.5px; color: var(--text); }
+  .drilldown-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; --grid-gap: 6px; }
+  .drilldown-dow { text-align: center; font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.55); padding-bottom: 4px; }
+  .drilldown-day { min-height: 90px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px; position: relative; cursor: pointer; display: flex; flex-direction: column; gap: 3px; transition: border-color 0.15s; }
+  .drilldown-day:hover { border-color: #475569; }
+  .drilldown-day.dd-future { opacity: 0.4; }
+  .drilldown-day.dd-empty { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
+  .drilldown-day-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .drilldown-day-num { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 600; color: var(--text); }
+  .drilldown-day-icons { display: flex; gap: 2px; align-items: center; }
+  .drilldown-day-icons span { font-size: 12px; line-height: 1; }
+  .drilldown-metrics { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.75); line-height: 1.7; margin-top: auto; white-space: nowrap; overflow: hidden; }
+  .drilldown-note { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; padding-bottom: 16px; }
+  .year-legend { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .year-legend-item { display: flex; align-items: center; gap: 6px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+  .year-legend-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+  .year-month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .year-month-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 10px; }
+  .year-month-name { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 1px; margin-bottom: 7px; color: var(--text); }
+  .year-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 3px; }
+  .year-dow-label { text-align: center; font-family: 'DM Mono', monospace; font-size: 7px; color: var(--muted); }
+  .year-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; --grid-gap: 2px; grid-auto-rows: 44px; }
+  .day-sq { width: 100%; height: 100%; border-radius: 2px; cursor: pointer; position: relative; transition: filter 0.1s; display: flex; flex-direction: column; justify-content: flex-start; padding: 2px 2px 2px 2px; box-sizing: border-box; }
+  .day-sq-top { display: flex; align-items: flex-start; justify-content: space-between; width: 100%; }
+  .day-sq:hover { filter: brightness(1.25); }
+  .day-sq.future { background: #1f2937 !important; cursor: pointer; }
+  .day-sq.no-data { background: #4b5563; }
+  .day-sq.score-3 { background: rgba(134,239,172,0.38); }
+  .day-sq.score-2 { background: rgba(253,230,138,0.38); }
+  .day-sq.score-1 { background: rgba(253,186,116,0.38); }
+  .day-sq.score-0 { background: rgba(252,165,165,0.38); }
+  .day-sq.empty { background: transparent; cursor: default; pointer-events: none; }
+  .day-sq-num { font-family: 'DM Mono', monospace; font-size: 8px; color: rgba(255,255,255,0.85); line-height: 1; align-self: flex-start; text-shadow: 0 0 3px rgba(0,0,0,0.6); }
+  .day-sq.score-3 .day-sq-num, .day-sq.score-2 .day-sq-num,
+  .day-sq.score-1 .day-sq-num, .day-sq.score-0 .day-sq-num { color: rgba(0,0,0,0.55); text-shadow: none; }
+  .day-sq-icons { display: grid; grid-template-columns: repeat(2, 8px); grid-template-rows: repeat(2, 8px); gap: 1px; }
+  .day-sq-icons span { font-size: 7px; line-height: 8px; text-align: center; display: block; overflow: hidden; }
+  .note-dot { position: absolute; top: 1px; right: 1px; width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.9); pointer-events: none; }
+  /* DAY TOOLTIP */
+  .day-tooltip { position: fixed; z-index: 1000; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px 11px; font-family: 'DM Mono', monospace; font-size: 10px; color: #e8e8f2; pointer-events: none; display: none; line-height: 1.7; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+  .day-tooltip .tt-date { font-weight: 600; color: #e8e8f2; margin-bottom: 4px; }
+  .day-tooltip .tt-pass { color: #7fff6e; }
+  .day-tooltip .tt-fail { color: #ff5f5f; }
+  /* DAY MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 2000; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 24px; width: 380px; max-width: 92vw; }
+  .modal-date { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px; margin-bottom: 6px; color: var(--text); }
+  .modal-holiday { font-family: 'DM Mono', monospace; font-size: 10px; color: #f87171; margin-bottom: 14px; letter-spacing: 0.5px; min-height: 0; }
+  .drilldown-holiday { font-family: 'DM Mono', monospace; font-size: 9px; color: #f87171; letter-spacing: 0.3px; }
+  .modal-metrics { margin-bottom: 18px; border: 1px solid #334155; border-radius: 6px; overflow: hidden; }
+  .modal-metric-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #334155; font-family: 'DM Mono', monospace; font-size: 11px; }
+  .modal-metric-row:last-child { border-bottom: none; }
+  .modal-metric-name { color: var(--muted); flex: 1; }
+  .modal-metric-goal { color: #45455a; font-size: 9px; }
+  .modal-metric-val { color: var(--text); font-weight: 600; }
+  .modal-check { font-size: 14px; width: 18px; text-align: center; }
+  .modal-notes-label { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 6px; }
+  .modal-notes-ta { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e8e8f2; font-family: 'DM Mono', monospace; font-size: 12px; padding: 9px 11px; resize: vertical; min-height: 80px; outline: none; line-height: 1.5; }
+  .modal-notes-ta:focus { border-color: #475569; }
+  .emoji-picker { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+  .emoji-btn { font-size: 17px; cursor: pointer; padding: 3px 5px; border-radius: 6px; border: 2px solid transparent; line-height: 1; background: var(--surface2); transition: border-color 0.12s, background 0.12s; user-select: none; }
+  .emoji-btn.selected { border-color: rgba(255,255,255,0.55); background: rgba(255,255,255,0.1); }
+  .emoji-btn:hover { border-color: rgba(255,255,255,0.25); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  /* SURF MODAL */
+  #surf-modal .modal-box { width: 420px; max-height: 90vh; overflow-y: auto; }
+  .surf-session-btn { display: inline-flex; align-items: center; gap: 5px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); background: none; border: 1px dashed var(--border); border-radius: 100px; padding: 4px 12px; cursor: pointer; margin: 12px 0 4px; transition: color 0.15s, border-color 0.15s; }
+  .surf-session-btn:hover { color: var(--text); border-color: var(--muted); }
+  #modal-surf-sessions { margin: 10px 0 4px; display: flex; flex-direction: column; gap: 8px; }
+  .surf-session-card { padding: 10px 12px; background: var(--surface2); border: 1px solid #334155; border-radius: 6px; }
+  .surf-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .surf-card-title { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+  .surf-card-edit { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); background: none; border: 1px dashed var(--border); border-radius: 100px; padding: 2px 8px; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+  .surf-card-edit:hover { color: var(--text); border-color: var(--muted); }
+  .surf-card-stars { display: flex; gap: 3px; margin-bottom: 6px; }
+  .surf-card-stars .surf-star { font-size: 14px; cursor: default; }
+  .surf-card-details { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+  .surf-card-details .sd-label { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); white-space: nowrap; padding: 1px 0; }
+  .surf-card-details .sd-value { font-size: 11px; color: #e2e8f0; padding: 1px 0; }
+  /* CALENDAR SUB-TOGGLE */
+  .cal-sub-toggle { display: flex; gap: 6px; margin-bottom: 18px; }
+  .cal-sub-btn { font-family: 'DM Mono', monospace; font-size: 11px; padding: 5px 14px; border-radius: 100px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s; }
+  .cal-sub-btn:hover { color: var(--text); border-color: var(--muted); }
+  .cal-sub-btn.active { background: var(--surface2); color: var(--text); border-color: #4a90d9; }
+  /* SURF JOURNAL */
+  .sj-header { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 20px; }
+  #surf-journal-list { display: flex; flex-direction: column; gap: 0; }
+  .sj-row { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: var(--surface); cursor: pointer; transition: border-color 0.15s; overflow: hidden; }
+  .sj-row:hover { border-color: #4a90d9; }
+  .sj-row.open { border-color: #4a90d9; }
+  .sj-row-summary { display: grid; grid-template-columns: 90px 1fr auto auto; align-items: center; gap: 12px; padding: 12px 16px; }
+  .sj-date { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+  .sj-location { font-size: 13px; color: var(--text); font-weight: 500; }
+  .sj-wave { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+  .sj-stars { display: flex; gap: 2px; }
+  .sj-stars span { font-size: 13px; }
+  .sj-stars .active { color: #fbbf24; }
+  .sj-stars .inactive { color: #334155; }
+  .sj-row-detail { display: none; padding: 0 16px 14px; border-top: 1px solid var(--border); margin-top: 0; }
+  .sj-row.open .sj-row-detail { display: block; }
+  .sj-detail-grid { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 4px 16px; margin-top: 12px; }
+  .sj-detail-grid .sd-label { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); white-space: nowrap; padding: 2px 0; }
+  .sj-detail-grid .sd-value { font-size: 12px; color: #e2e8f0; padding: 2px 0; }
+  .sj-notes { margin-top: 10px; font-size: 12px; color: #94a3b8; font-style: italic; line-height: 1.5; }
+  .sj-empty { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); padding: 32px 0; text-align: center; }
+  .sj-edit-btn { margin-top: 10px; font-family: 'DM Mono', monospace; font-size: 10px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+  .sj-edit-btn:hover { color: var(--text); border-color: #4a90d9; }
+  #sj-sort-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  #sj-sort-bar .sort-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-right: 2px; }
+  .sj-sort-btn { font-family: 'DM Mono', monospace; font-size: 10px; padding: 4px 11px; border-radius: 100px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s; white-space: nowrap; }
+  .sj-sort-btn:hover { color: var(--text); border-color: var(--muted); }
+  .sj-sort-btn.active { background: var(--surface2); color: var(--text); border-color: #4a90d9; }
+  .surf-stars { display: flex; gap: 6px; margin-bottom: 14px; }
+  .surf-star { font-size: 24px; color: #334155; line-height: 1; user-select: none; }
+  .surf-star.active { color: #fbbf24; }
+  .surf-star-slot { position: relative; display: inline-block; font-size: 24px; line-height: 1; width: 0.85em; height: 0.9em; cursor: pointer; }
+  .sh-left, .sh-right { position: absolute; top: 0; left: 0; color: #334155; user-select: none; transition: color 0.12s; }
+  .sh-left  { clip-path: inset(0 50% 0 0); }
+  .sh-right { clip-path: inset(0 0 0 50%); }
+  .sh-left.active, .sh-right.active { color: #fbbf24; }
+  .sh-left:hover, .sh-right:hover { color: #fde68a; }
+  .surf-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-bottom: 14px; }
+  .surf-field { display: flex; flex-direction: column; gap: 4px; }
+  .surf-field.full { grid-column: 1 / -1; }
+  .surf-input { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e8e8f2; font-family: 'DM Mono', monospace; font-size: 11px; padding: 7px 10px; outline: none; }
+  .surf-input:focus { border-color: #475569; }
+  .surf-ta { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e8e8f2; font-family: 'DM Mono', monospace; font-size: 11px; padding: 7px 10px; outline: none; resize: vertical; min-height: 70px; line-height: 1.5; }
+  .surf-ta:focus { border-color: #475569; }
+  .modal-btn { font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 7px 18px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: opacity 0.15s; }
+  .modal-btn.save { background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: 600; }
+  .modal-btn.save:hover { opacity: 0.85; }
+  .modal-btn.close-btn { background: none; color: var(--muted); }
+  .modal-btn.close-btn:hover { color: var(--text); }
+  .modal-save-status { font-family: 'DM Mono', monospace; font-size: 10px; color: #7fff6e; display: none; align-self: center; margin-right: auto; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .goals-list { grid-template-columns: repeat(2,1fr); }
+    .summary-row { grid-template-columns: repeat(2,1fr); }
+    .trend-charts-row { grid-template-columns: repeat(2,1fr); }
+    .year-month-grid { grid-template-columns: repeat(2,1fr); }
+  }
+  .needs-attn-wrap { align-self: stretch; flex: 1; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .needs-attn-table { border-collapse: collapse; width: 100%; }
+  .needs-attn-table th { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); font-weight: 600; white-space: nowrap; text-align: left; }
+  .needs-attn-table th:not(:first-child) { text-align: right; }
+  .needs-attn-table td { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 300; padding: 5px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: right; color: var(--text); }
+  .needs-attn-table td:first-child { text-align: left; color: var(--muted); font-size: 10px; }
+  .needs-attn-table tr:last-child td { border-bottom: none; }
+  .needs-attn-table .na-gap-pct { color: var(--warn); font-weight: 500; }
+  .needs-attn-table .na-gap-num { color: var(--warn); opacity: 0.75; }
+  .needs-attn-table .na-empty td { text-align: center; color: var(--muted); font-size: 10px; padding: 14px 20px; }
+
+  @media (max-width: 768px) {
+    .app { padding: 20px 16px; }
+    .dashboard-top { flex-direction: column; align-items: stretch; }
+    .streak-panel { align-self: stretch; flex: unset; min-width: unset; }
+    .summary-table-wrap { align-self: stretch; flex: unset; }
+    .needs-attn-wrap { align-self: stretch; flex: unset; }
+    .needs-attn-table { width: 100%; }
+    .summary-table { width: 100%; }
+    .trend-charts-row { grid-template-columns: 1fr; }
+    .trend-charts-row.one-col { grid-template-columns: 1fr; }
+    .year-month-grid { grid-template-columns: repeat(2,1fr); }
+    nav { flex-wrap: wrap; }
+    .header-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .header-right { text-align: left; }
+    .monthly-header { flex-wrap: wrap; gap: 10px; }
+    #calendar-layout { flex-direction: column; }
+    #notes-sidebar { flex: 0 0 auto; width: 100%; max-height: 60vh; position: static; }
+  }
+  @media (max-width: 580px) {
+    .goals-list { grid-template-columns: 1fr; }
+    .summary-row { grid-template-columns: 1fr; }
+    .pct-big { font-size: 26px; }
+    .year-month-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 28px; }
+    .dash-stat-panel { min-width: unset; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading"><span class="loader-text">LOADING</span></div>
+
+<div class="app">
+  <header>
+    <div class="header-row">
+      <div>
+        <h1>2026 Goals</h1>
+        <div class="header-subtitle">Take action, be grateful, momentum matters</div>
+      </div>
+      <div class="header-right">
+        <div class="week-badge" id="week-badge">WK — / 52</div>
+        <div class="date-str" id="date-str">—</div>
+      </div>
+    </div>
+  </header>
+
+  <nav>
+    <button class="tab active" data-view="dashboard">Dashboard</button>
+    <button class="tab" data-view="trends">Trends</button>
+    <button class="tab" data-view="year">Calendar</button>
+    <button class="tab" data-view="monthly">Monthly Log</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="view active" id="view-dashboard">
+    <div class="dashboard-top">
+      <div class="dash-stat-panel">
+        <div class="dash-yr-bar">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text);font-weight:600">Year Progress</span>
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;color:var(--accent)" id="yb-pct">0.0%</span>
+          </div>
+          <div class="yb-track" style="height:6px"><div class="yb-fill" id="yb-fill" style="width:0%"></div></div>
+        </div>
+        <div class="dash-stat-grid" style="border-top:1px solid var(--border)">
+          <div class="dash-stat">
+            <div class="dash-stat-val" id="ds-days">—</div>
+            <div class="dash-stat-lbl">YTD Days</div>
+          </div>
+          <div class="dash-stat">
+            <div class="dash-stat-val" id="ds-weeks">—</div>
+            <div class="dash-stat-lbl">YTD Weeks</div>
+          </div>
+        </div>
+      </div>
+      <div class="streak-panel" id="streak-panel">
+        <div class="streak-panel-title">Current Streaks</div>
+        <div id="streak-rows"></div>
+      </div>
+      <div class="summary-table-wrap">
+        <table class="summary-table">
+          <thead>
+            <tr><th colspan="3" style="text-align:left;padding:8px 12px 2px;font-size:9px;letter-spacing:1.5px;color:var(--text);font-weight:600;border-bottom:none;opacity:1">Goal Status by Priority</th></tr>
+            <tr>
+              <th></th>
+              <th class="green">On Pace</th>
+              <th class="red">Lagging</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="row-lbl high">High</td><td id="st-high-pace" class="green">—</td><td id="st-high-lag" class="red">—</td></tr>
+            <tr><td class="row-lbl medium">Medium</td><td id="st-med-pace" class="green">—</td><td id="st-med-lag" class="red">—</td></tr>
+            <tr><td class="row-lbl lower">Low</td><td id="st-low-pace" class="green">—</td><td id="st-low-lag" class="red">—</td></tr>
+            <tr class="total-row"><td class="row-lbl total">Total</td><td id="st-tot-pace" class="green">—</td><td id="st-tot-lag" class="red">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="needs-attn-wrap">
+        <table class="needs-attn-table" id="needs-attn-table"></table>
+      </div>
+    </div>
+    <div class="goals-list" id="goals-list"></div>
+  </div>
+
+  <!-- MONTHLY LOG -->
+  <div class="view" id="view-monthly">
+    <div class="monthly-header">
+      <button class="month-nav-btn" id="prev-month">← Prev</button>
+      <span class="month-label" id="month-label">—</span>
+      <button class="month-nav-btn" id="next-month">Next →</button>
+      <span class="autosave-status" id="autosave-status"></span>
+      <div class="export-group">
+        <button class="export-btn" id="export-month" data-testid="button-export-month">Export Month</button>
+        <button class="export-btn" id="export-all" data-testid="button-export-all">Export All</button>
+      </div>
+    </div>
+    <div class="monthly-table-wrap">
+      <table class="monthly-table" id="monthly-table"></table>
+    </div>
+  </div>
+
+  <!-- YEAR VIEW -->
+  <div class="view" id="view-year">
+    <div class="cal-sub-toggle">
+      <button class="cal-sub-btn active" data-sub="calendar">Calendar</button>
+      <button class="cal-sub-btn" data-sub="journal">Surf Journal</button>
+    </div>
+    <div id="cal-sub-calendar">
+      <div id="month-drilldown"></div>
+      <div id="year-view-legend"></div>
+      <div id="event-chips-row" class="event-chips-row"></div>
+      <div id="calendar-layout">
+        <div id="year-view-container"></div>
+        <div id="notes-sidebar"><div class="notes-sidebar-header">NOTES</div><div id="notes-sidebar-body" style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;">Loading…</div></div>
+      </div>
+    </div>
+    <div id="cal-sub-journal" style="display:none">
+      <div class="sj-header">🏄 Surf Journal</div>
+      <div id="sj-sort-bar"></div>
+      <div id="surf-journal-list"></div>
+    </div>
+  </div>
+
+  <!-- TRENDS -->
+  <div class="view" id="view-trends">
+    <div class="trends-container" id="trends-container"></div>
+  </div>
+</div>
+
+<!-- FLOATING TOOLTIP -->
+<div class="day-tooltip" id="day-tooltip"></div>
+
+<!-- DAY MODAL -->
+<div class="modal-overlay" id="day-modal">
+  <div class="modal-box">
+    <div class="modal-date" id="modal-date"></div>
+    <div class="modal-holiday" id="modal-holiday"></div>
+    <div class="modal-metrics" id="modal-metrics-body"></div>
+    <div class="modal-notes-label">Notes</div>
+    <textarea class="modal-notes-ta" id="modal-notes-ta" placeholder="Write anything about this day…"></textarea>
+    <div class="modal-notes-label" style="margin-top:12px;">Tags</div>
+    <div class="emoji-picker" id="modal-emoji-picker"></div>
+    <div id="modal-surf-sessions"></div>
+    <button class="surf-session-btn" id="open-surf-btn">🏄 Add Surf Session</button>
+    <div class="modal-actions">
+      <span class="modal-save-status" id="modal-save-status">Saved</span>
+      <button class="modal-btn close-btn" id="modal-close-btn">Close</button>
+      <button class="modal-btn save" id="modal-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SURF SESSION MODAL -->
+<div class="modal-overlay" id="surf-modal">
+  <div class="modal-box">
+    <div class="modal-date" id="surf-modal-date"></div>
+    <div class="modal-notes-label">Session Quality</div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
+      <div class="surf-stars" style="margin-bottom:0">
+        <span class="surf-star-slot" data-star="1"><span class="sh-left" data-val="0.5">★</span><span class="sh-right" data-val="1">★</span></span>
+        <span class="surf-star-slot" data-star="2"><span class="sh-left" data-val="1.5">★</span><span class="sh-right" data-val="2">★</span></span>
+        <span class="surf-star-slot" data-star="3"><span class="sh-left" data-val="2.5">★</span><span class="sh-right" data-val="3">★</span></span>
+        <span class="surf-star-slot" data-star="4"><span class="sh-left" data-val="3.5">★</span><span class="sh-right" data-val="4">★</span></span>
+        <span class="surf-star-slot" data-star="5"><span class="sh-left" data-val="4.5">★</span><span class="sh-right" data-val="5">★</span></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex:1">
+        <input class="surf-input" id="surf-time-start" type="time" style="flex:1;margin:0">
+        <span style="color:var(--muted);font-size:12px">to</span>
+        <input class="surf-input" id="surf-time-end" type="time" style="flex:1;margin:0">
+        <span id="surf-duration" style="color:#7fff6e;font-size:10px;white-space:nowrap;font-family:'DM Mono',monospace"></span>
+      </div>
+    </div>
+    <div class="surf-fields">
+      <div class="surf-field">
+        <label class="modal-notes-label">Location</label>
+        <input class="surf-input" id="surf-location" type="text" placeholder="e.g. Steamer Lane">
+      </div>
+      <div class="surf-field">
+        <label class="modal-notes-label">Surfboard</label>
+        <input class="surf-input" id="surf-surfboard" type="text" placeholder="e.g. 6'2 shortboard">
+      </div>
+      <div class="surf-field">
+        <label class="modal-notes-label">Wave Size (ft)</label>
+        <input class="surf-input" id="surf-wave-size" type="text" placeholder="e.g. 3-5">
+      </div>
+      <div class="surf-field">
+        <label class="modal-notes-label">Tide</label>
+        <input class="surf-input" id="surf-tide" type="text" placeholder="e.g. incoming low">
+      </div>
+      <div class="surf-field">
+        <label class="modal-notes-label">Wind</label>
+        <input class="surf-input" id="surf-wind" type="text" placeholder="e.g. offshore NW 10kts">
+      </div>
+      <div class="surf-field">
+        <label class="modal-notes-label">Texture</label>
+        <input class="surf-input" id="surf-texture" type="text" placeholder="e.g. glassy, choppy, bumpy">
+      </div>
+      <div class="surf-field">
+        <label class="modal-notes-label">Primary Swell</label>
+        <input class="surf-input" id="surf-swell-dir" type="text" placeholder="e.g. NW, 8ft @ 15s">
+      </div>
+      <div class="surf-field">
+        <label class="modal-notes-label">Secondary Swell</label>
+        <input class="surf-input" id="surf-swell-secondary" type="text" placeholder="e.g. SW, 3ft @ 10s">
+      </div>
+      <div class="surf-field full">
+        <label class="modal-notes-label">Notes</label>
+        <textarea class="surf-ta" id="surf-notes" placeholder="Additional commentary…"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <span class="modal-save-status" id="surf-save-status" style="display:none">Saved ✓</span>
+      <button class="modal-btn close-btn" id="surf-delete-btn" style="display:none;color:#f87171;border-color:#f87171">Delete</button>
+      <button class="modal-btn close-btn" id="surf-close-btn">Close</button>
+      <button class="modal-btn save" id="surf-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD EVENT MODAL -->
+<div class="modal-overlay" id="add-event-modal">
+  <div class="modal-box">
+    <div class="modal-date" id="ae-modal-title">Add Event</div>
+    <label class="modal-label">Event Name</label>
+    <input class="modal-input" id="ae-name" type="text" placeholder="e.g. Ski Trip" maxlength="40">
+    <label class="modal-label">Start Date</label>
+    <input class="modal-input" id="ae-start" type="date">
+    <label class="modal-label">End Date</label>
+    <input class="modal-input" id="ae-end" type="date">
+    <label class="modal-label">Color</label>
+    <div class="color-swatches" id="ae-swatches">
+      <div class="color-swatch selected" data-color="#6ea8ff" style="background:#6ea8ff"></div>
+      <div class="color-swatch" data-color="#7fff6e" style="background:#7fff6e"></div>
+      <div class="color-swatch" data-color="#ffd166" style="background:#ffd166"></div>
+      <div class="color-swatch" data-color="#ff5f5f" style="background:#ff5f5f"></div>
+      <div class="color-swatch" data-color="#c084fc" style="background:#c084fc"></div>
+      <div class="color-swatch" data-color="#fb923c" style="background:#fb923c"></div>
+    </div>
+    <label class="modal-label" style="margin-top:12px;">Notes</label>
+    <textarea class="modal-notes-ta" id="ae-notes" placeholder="Any details about this event…" style="min-height:60px;"></textarea>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="modal-btn close-btn" id="ae-cancel-btn">Cancel</button>
+      <button class="modal-btn save" id="ae-save-btn">Add Event</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CUMULATIVE_GOALS   = [1, 3, 9, 13];
+  const AVERAGE_GOALS      = [2, 6];
+  const WEEKLY_COUNT_GOALS = [4, 7, 8, 10, 11];
+  const SKIP_GOALS              = [12];       // Other Hobbies (qualitative only)
+  const SKIP_DASHBOARD_GOALS   = [12, 13];   // Also hide Surf Sessions from dashboard cards
+  const MONTHLY_LOG_GOAL_ORDER = [1, 2, 3, 13, 4, 5, 6, 7, 8, 9, 10, 11];
+
+  let state = {
+    goals: [], logs: [], meta: {},
+    currentView: 'dashboard',
+    logMonth: null,          // "YYYY-MM"
+    monthlyData: {},         // { "goal_id:YYYY-MM-DD": value }
+    allRawLogs: []           // [{goal_id, date, value}] preloaded for Export All
+  };
+
+  const pwd = () => sessionStorage.getItem('goals_pwd');
+
+  async function apiFetch(url, opts = {}) {
+    const p = pwd();
+    if (!p) { window.location.href = '/login.html'; return null; }
+    const sep = url.includes('?') ? '&' : '?';
+    const res = await fetch(`${url}${sep}pwd=${p}`, opts);
+    if (res.status === 401) { sessionStorage.removeItem('goals_pwd'); window.location.href = '/login.html'; return null; }
+    return res.json();
+  }
+
+  function renderStreaks(streaks) {
+    const container = document.getElementById('streak-rows');
+    if (!container || !streaks) return;
+    container.innerHTML = streaks.map(s => `
+      <div class="streak-row">
+        <span class="streak-label">${s.label}</span>
+        <span class="streak-val${s.streak === 0 ? ' zero' : ''}">${s.streak === 0 ? '—' : s.streak + 'd'}</span>
+      </div>`).join('');
+  }
+
+  async function loadAllRawLogs() {
+    // Preload every raw daily_logs entry for the year so Export All can
+    // build the CSV from already-loaded data with no click-time API calls.
+    const now  = new Date();
+    const year = now.getFullYear();
+    const months = [];
+    for (let m = 1; m <= 12; m++) months.push(`${year}-${String(m).padStart(2, '0')}`);
+    const results = await Promise.all(
+      months.map(ym => apiFetch(`/api/logs/monthly?month=${ym}`))
+    );
+    const all = [];
+    results.forEach(rows => { if (rows) all.push(...rows); });
+    all.sort((a, b) => a.date.localeCompare(b.date) || a.goal_id - b.goal_id);
+    state.allRawLogs = all;
+  }
+
+  async function init() {
+    try {
+      const [goals, logs, meta, streaks] = await Promise.all([
+        apiFetch('/api/goals'),
+        apiFetch('/api/logs'),
+        apiFetch('/api/meta'),
+        apiFetch('/api/streaks'),
+        loadAllRawLogs(),
+      ]);
+      if (!goals) return;
+      state.goals = goals;
+      state.logs = logs || [];
+      state.meta = meta || {};
+
+      const now = new Date();
+      state.logMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      renderDashboard();
+      renderStreaks(streaks);
+      renderTrends();
+      document.getElementById('loading').style.opacity = '0';
+      setTimeout(() => document.getElementById('loading').style.display = 'none', 400);
+    } catch (e) { console.error(e); }
+  }
+
+  function getDays(goalId) {
+    const entry = state.logs.find(l => l.goal_id === goalId);
+    return (entry && entry.days !== undefined) ? entry.days : null;
+  }
+  function getVal(goalId) {
+    const entry = state.logs.find(l => l.goal_id === goalId);
+    return entry ? entry.value : null;
+  }
+
+  // ── DASHBOARD ─────────────────────────────────────────────────────────────
+  function renderDashboard() {
+    const meta = state.meta;
+    document.getElementById('week-badge').innerText = `WK ${meta.week} / 52`;
+    document.getElementById('date-str').innerText = meta.date;
+
+    document.getElementById('yb-fill').style.width = meta.pctOfYear + '%';
+    document.getElementById('yb-pct').innerText = meta.pctOfYear + '%';
+
+    const list = document.getElementById('goals-list');
+    list.innerHTML = '';
+    const counts = { high: [0,0,0], medium: [0,0,0], lower: [0,0,0] }; // [pace, lag, tbd]
+
+    const priorityOrder = { 'high': 1, 'medium': 2, 'lower': 3 };
+    const sortKey = (g) => g.id === 9 ? 11.5 : g.id; // Reading between Alcohol and Other Hobbies
+    const sortedGoals = [...state.goals].filter(g => g.id !== 13).sort((a, b) => {
+      const po = priorityOrder[a.priority] - priorityOrder[b.priority];
+      if (po !== 0) return po;
+      if (a.priority === 'high') {
+        if (a.id === 2) return 1;
+        if (b.id === 2) return -1;
+      }
+      return sortKey(a) - sortKey(b);
+    });
+
+    const ATTN_FMT = {
+      1:  { cur: (v) => `$${(v/1000).toFixed(1)}k`,    tgt: (v) => `$${(v/1000).toFixed(0)}k`,    gap: (v) => `$${Math.abs(v).toFixed(1)}k` },
+      2:  { cur: (v) => `${v.toFixed(1)} h/day`,       tgt: (v) => `${v} h/day`,                  gap: (v) => `${Math.abs(v).toFixed(1)} h/day` },
+      3:  { cur: (v) => `${v.toFixed(1)} hrs`,          tgt: (v) => `${v} hrs`,                    gap: (v) => `${Math.abs(v).toFixed(1)} hrs` },
+      4:  { cur: (v) => `${v.toFixed(1)} h/wk`,        tgt: (v) => `${v} h/wk`,                   gap: (v) => `${Math.abs(v).toFixed(1)} h/wk` },
+      6:  { cur: (v) => `${v.toFixed(1)} h/day`,       tgt: (v) => `${v} h/day`,                  gap: (v) => `${Math.abs(v).toFixed(1)} h/day` },
+      7:  { cur: (v) => `${v.toFixed(1)}/wk`,          tgt: (v) => `${v}/wk`,                     gap: (v) => `${Math.abs(v).toFixed(1)}/wk` },
+      8:  { cur: (v) => `${v.toFixed(1)}/wk`,          tgt: (v) => `${v}/wk`,                     gap: (v) => `${Math.abs(v).toFixed(1)}/wk` },
+      9:  { cur: (v) => `${Math.round(v)} books`,      tgt: (v) => `${v} books`,                  gap: (v) => `${Math.abs(v).toFixed(1)} books` },
+      10: { cur: (v) => `${v.toFixed(1)}/wk`,          tgt: (v) => `${v}/wk`,                     gap: (v) => `${Math.abs(v).toFixed(1)}/wk` },
+      11: { cur: (v) => `${v.toFixed(1)}/wk`,          tgt: (v) => `${v}/wk`,                     gap: (v) => `${Math.abs(v).toFixed(1)}/wk` },
+    };
+    const attnRows = [];
+
+    let lastPriority = null;
+    sortedGoals.forEach((g, idx) => {
+      if (g.priority !== lastPriority) {
+        const hdr = document.createElement('div');
+        hdr.style.cssText = `grid-column:1/-1; display:flex; align-items:center; gap:16px; padding:8px 0; border-bottom:1px solid var(--border); margin-top:${idx === 0 ? '0' : '24px'}`;
+        const label = g.priority === 'lower' ? 'LOW PRIORITY' : g.priority.toUpperCase() + ' PRIORITY';
+        hdr.innerHTML = `
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px">${label}</span>
+          <div style="flex:1;height:1px;background:var(--border);opacity:0.4"></div>
+        `;
+        list.appendChild(hdr);
+        lastPriority = g.priority;
+      }
+
+      const rawCurrent = getVal(g.id);
+      // Cumulative goal 9 (Reading): treat no data as 0 so it shows lagging, not TBD
+      const current = (g.id === 9 && rawCurrent === null) ? 0 : rawCurrent;
+      let status = 'tbd', pct = 0;
+      const paceExpected = parseFloat(meta.pctOfYear);
+
+      // Rate goals compare directly against KPI; cumulative goals compare pace vs year %
+      const RATE_GOALS = [2, 4, 6, 7, 8, 10, 11];
+
+      // Goal 5 status is derived from market data, not stored logs
+      if (g.id === 5 && meta.market) {
+        const avgBenchmark = (parseFloat(meta.market.sp500) + parseFloat(meta.market.vti)) / 2;
+        const userReturn = current || 0;
+        status = userReturn >= avgBenchmark ? 'on-pace' : 'lagging';
+      }
+
+      if (current !== null) {
+        if (g.id === 5) {
+          // already handled above
+        } else if (g.kpi && RATE_GOALS.includes(g.id)) {
+          status = g.lower_is_better
+            ? (current <= g.kpi ? 'on-pace' : 'lagging')
+            : (current >= g.kpi ? 'on-pace' : 'lagging');
+          pct = g.lower_is_better
+            ? Math.min(100, Math.round((g.kpi / Math.max(current, 0.01)) * 100))
+            : Math.min(100, Math.round((current / g.kpi) * 100));
+        } else if (g.kpi) {
+          // Cumulative: compare progress % against year elapsed %
+          pct = Math.min(100, Math.round((current / g.kpi) * 100));
+          status = pct >= paceExpected ? 'on-pace' : 'lagging';
+        }
+      }
+
+      const si = status === 'on-pace' ? 0 : status === 'lagging' ? 1 : 2;
+      if (counts[g.priority]) counts[g.priority][si]++;
+
+      // ── Needs Attention data collection ────────────────────────────────────
+      if (status === 'lagging' && current !== null && g.kpi && ATTN_FMT[g.id]) {
+        const fmt = ATTN_FMT[g.id];
+        const CUMULATIVE = [1, 3, 9];
+        const RATE_LOWER = [2, 4, 11];
+        let gapNum, gapPct;
+        if (CUMULATIVE.includes(g.id)) {
+          const expected = g.kpi * (paceExpected / 100);
+          gapNum = expected - current;
+          gapPct = paceExpected - pct;
+        } else if (RATE_LOWER.includes(g.id)) {
+          gapNum = current - g.kpi;
+          gapPct = ((current - g.kpi) / g.kpi) * 100;
+        } else {
+          gapNum = g.kpi - current;
+          gapPct = ((g.kpi - current) / g.kpi) * 100;
+        }
+        attnRows.push({
+          name: g.name,
+          currentFmt: fmt.cur(current),
+          targetFmt: fmt.tgt(g.kpi),
+          gapNumFmt: fmt.gap(gapNum),
+          gapPct: Math.max(0, gapPct),
+        });
+      }
+
+      // ── Natural-language callout format per goal ────────────────────────────
+      function fmtNum(v, dec = 1) {
+        if (v === null || v === undefined) return '—';
+        return Number(v.toFixed(dec));
+      }
+      function fmtMoney(v) {
+        if (v === null) return '—';
+        if (v >= 1000) return `$${(v / 1000).toFixed(1)}k`;
+        return `$${Math.round(v)}`;
+      }
+      const CALLOUT_FMT = {
+        2:  (v) => `${fmtNum(v)} hrs per day`,
+        4:  (v) => `${fmtNum(v)} hrs per week`,
+        6:  (v) => `${fmtNum(v)} hrs per day`,
+        7:  (v) => `${fmtNum(v)} catch-ups per week`,
+        8:  (v) => `${fmtNum(v)} catch-ups per week`,
+        9:  (v) => `${v !== null ? Math.round(v) : 0} books read`,
+        10: (v) => `${fmtNum(v)} sessions per week`,
+        11: (v) => `${fmtNum(v)} drink sessions per week`,
+      };
+
+      // ── Bar viz config for goals with the limit/target bar visual ──────────
+      const BAR_CFG = {
+        2:  { unit: 'h',    max: 3,   lowerIsBetter: true  },
+        4:  { unit: 'hrs',  max: 70,  lowerIsBetter: true  },
+        6:  { unit: 'h',    max: 2,   lowerIsBetter: false },
+        7:  { unit: '/wk',  max: 5,   lowerIsBetter: false },
+        8:  { unit: '/wk',  max: 5,   lowerIsBetter: false },
+        10: { unit: '/wk',  max: 6,   lowerIsBetter: false },
+        11: { unit: '/wk',  max: 3,   lowerIsBetter: true  },
+      };
+
+      function buildBarViz(val, kpi, sts, cfg, calloutText) {
+        const barColor  = sts === 'on-pace' ? 'var(--accent)' : 'var(--warn)';
+        const trackBg   = sts === 'on-pace' ? 'rgba(127,255,110,0.1)' : 'rgba(255,95,95,0.1)';
+        const fillPct   = val !== null ? Math.min(100, (val / cfg.max) * 100) : 0;
+        const tickPct   = Math.min(100, (kpi / cfg.max) * 100);
+        const markerTxt = cfg.lowerIsBetter ? `LIMIT ${kpi}${cfg.unit}` : `TARGET ${kpi}${cfg.unit}`;
+        return `
+          <div style="margin-top:10px">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:${barColor};line-height:1.2;margin-bottom:8px">${calloutText}</div>
+            <div class="prog-track" style="background:${trackBg};height:8px;">
+              <div class="prog-fill" style="width:${fillPct}%;background:${barColor}"></div>
+              <div class="pace-tick" style="left:${tickPct}%;background:rgba(255,255,255,0.7);width:2px;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:5px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">
+              <span>0</span><span>${markerTxt}</span><span>${cfg.max}${cfg.unit}+</span>
+            </div>
+          </div>`;
+      }
+
+      // Build progress HTML
+      let progressHTML = '';
+
+      if (g.id === 5 && meta.market) {
+        const benchmarkSp = parseFloat(meta.market.sp500);
+        const benchmarkVti = parseFloat(meta.market.vti);
+        const userReturn = current || 0;
+        const getBarPct = (val) => Math.max(0, Math.min(100, (val + 10) * 4));
+        progressHTML = `
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;font-family:'DM Mono',monospace;">
+                <span>MY RETURN</span><span style="color:#60a5fa">${userReturn}%</span>
+              </div>
+              <div class="prog-track" style="height:4px"><div class="prog-fill" style="width:${getBarPct(userReturn)}%;background:#60a5fa"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;font-family:'DM Mono',monospace;color:var(--muted)">
+                <span>S&P 500</span><span style="color:#93c5fd">${benchmarkSp}%</span>
+              </div>
+              <div class="prog-track" style="height:4px"><div class="prog-fill" style="width:${getBarPct(benchmarkSp)}%;background:#93c5fd;opacity:0.6"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;font-family:'DM Mono',monospace;color:var(--muted)">
+                <span>TOTAL MARKET</span><span style="color:#93c5fd">${benchmarkVti}%</span>
+              </div>
+              <div class="prog-track" style="height:4px"><div class="prog-fill" style="width:${getBarPct(benchmarkVti)}%;background:#93c5fd;opacity:0.6"></div></div>
+            </div>
+          </div>`;
+      } else if (BAR_CFG[g.id]) {
+        const callout = CALLOUT_FMT[g.id] ? CALLOUT_FMT[g.id](current) : (current !== null ? current : '—');
+        progressHTML = buildBarViz(current, g.kpi, status, BAR_CFG[g.id], callout);
+        if (g.id === 6) {
+          const daysEx = getDays(6);
+          if (daysEx !== null) progressHTML += `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:5px">${daysEx} days exercised</div>`;
+        }
+      } else {
+        if (g.id === 1 || g.id === 3) {
+          // Save $100k and Surf: keep original compact progress-row format
+          const displayVal = current !== null ? (current % 1 === 0 ? current : parseFloat(current.toFixed(2))) : '—';
+          const surfSessionsLine = g.id === 3
+            ? (() => { const s = getVal(13); return s !== null ? `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:5px">${Math.round(s)} surf sessions</div>` : ''; })()
+            : '';
+          progressHTML = `
+            <div class="progress-row">
+              <div class="prog-track">
+                <div class="prog-fill ${status}" style="width:${pct}%"></div>
+                <div class="pace-tick" style="left:${paceExpected}%"></div>
+              </div>
+              <span class="prog-label">${displayVal}${g.unit} / ${g.kpi || '?'}${g.unit}</span>
+            </div>${surfSessionsLine}`;
+        } else {
+          const barColor = status === 'on-pace' ? 'var(--accent)' : status === 'lagging' ? 'var(--warn)' : 'var(--muted)';
+          const callout  = CALLOUT_FMT[g.id] ? CALLOUT_FMT[g.id](current) : (current !== null ? `${current}${g.unit}` : '—');
+          const kpiLabel = g.kpi ? `${g.kpi}${g.unit}` : '?';
+          progressHTML = `
+            <div style="margin-top:10px">
+              <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:${barColor};line-height:1.2;margin-bottom:8px">${callout}</div>
+              <div class="progress-row">
+                <div class="prog-track">
+                  <div class="prog-fill ${status}" style="width:${pct}%"></div>
+                  <div class="pace-tick" style="left:${paceExpected}%"></div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:5px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">
+                <span>0</span><span>TARGET ${kpiLabel}</span><span>${kpiLabel}+</span>
+              </div>
+            </div>`;
+        }
+      }
+
+      let bottomRight = `<div class="pct-big ${status}">${pct}%</div>`;
+
+      if (g.id === 5 && meta.market) {
+        const sp500     = parseFloat(meta.market.sp500);
+        const userRet   = current || 0;
+        const spread    = isNaN(sp500) ? null : +(userRet - sp500).toFixed(2);
+        const spreadTxt = spread === null ? '—' : (spread >= 0 ? `+${spread}` : `${spread}`);
+        const spColor   = spread === null ? 'var(--muted)' : spread >= 0 ? 'var(--accent)' : 'var(--warn)';
+        bottomRight = `
+          <div style="text-align:right">
+            <div class="pct-big" style="color:${spColor}">${spreadTxt}%</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:2px">vs S&P 500</div>
+          </div>`;
+      }
+
+      const CUSHION_CFG = {
+        2:  { rateLabel: 'h/day',         lowerIsBetter: true,  suffix: 'limit'  },
+        4:  { rateLabel: 'hrs/wk',        lowerIsBetter: true,  suffix: 'limit'  },
+        6:  { rateLabel: 'hrs/day',       lowerIsBetter: false, suffix: 'target' },
+        7:  { rateLabel: 'catch-ups/wk',  lowerIsBetter: false, suffix: 'target' },
+        8:  { rateLabel: 'catch-ups/wk',  lowerIsBetter: false, suffix: 'target' },
+        10: { rateLabel: 'sessions/wk',   lowerIsBetter: false, suffix: 'target' },
+        11: { rateLabel: 'days/wk',       lowerIsBetter: true,  suffix: 'limit'  },
+      };
+
+      if (CUSHION_CFG[g.id] && current !== null && g.kpi) {
+        const cfg = CUSHION_CFG[g.id];
+        const gap = cfg.lowerIsBetter ? g.kpi - current : current - g.kpi;
+        const absPct = Math.abs((gap / g.kpi) * 100);
+        const direction = gap >= 0
+          ? (cfg.lowerIsBetter ? 'below' : 'above')
+          : (cfg.lowerIsBetter ? 'over'  : 'below');
+        const color = status === 'on-pace' ? 'var(--accent)' : 'var(--warn)';
+        const pctDisplay = Number(absPct.toFixed(1));
+        bottomRight = `
+          <div style="text-align:right">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:${color};opacity:0.85">
+              ${pctDisplay}% ${direction} ${cfg.suffix}
+            </div>
+          </div>`;
+      }
+
+      const card = document.createElement('div');
+      if (SKIP_DASHBOARD_GOALS.includes(g.id)) {
+        card.className = 'goal-card tbd';
+        card.innerHTML = `
+          <div class="goal-body">
+            <div class="goal-top"><span class="goal-name">${g.name}</span><span class="cat-tag">${g.category}</span></div>
+            <div class="goal-desc">${g.description}</div>
+            <div style="margin-top:14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);font-style:italic">Qualitative — no numeric target</div>
+          </div>
+          <div class="goal-right"></div>`;
+      } else {
+      card.className = `goal-card ${status}`;
+      card.innerHTML = `
+        <div class="goal-body">
+          <div class="goal-top"><span class="goal-name">${g.name}</span><span class="cat-tag">${g.category}</span></div>
+          <div class="goal-desc">${g.description}</div>
+          ${progressHTML}
+        </div>
+        <div class="goal-right">
+          <div class="status-word">${status.replace('-',' ')}</div>
+          ${bottomRight}
+        </div>`;
+      }
+      list.appendChild(card);
+    });
+
+    const setCell = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+    const p = counts;
+    setCell('st-high-pace', p.high[0]);   setCell('st-high-lag', p.high[1]);
+    setCell('st-med-pace',  p.medium[0]); setCell('st-med-lag',  p.medium[1]);
+    setCell('st-low-pace',  p.lower[0]);  setCell('st-low-lag',  p.lower[1]);
+    setCell('st-tot-pace',  p.high[0]+p.medium[0]+p.lower[0]);
+    setCell('st-tot-lag',   p.high[1]+p.medium[1]+p.lower[1]);
+
+    const daysElapsed = Math.round(parseFloat(meta.pctOfYear) / 100 * 365);
+    setCell('ds-days',  daysElapsed);
+    setCell('ds-weeks', Math.floor(daysElapsed / 7));
+
+    // ── Needs Attention table ──────────────────────────────────────────────
+    const attnTable = document.getElementById('needs-attn-table');
+    if (attnTable) {
+      attnRows.sort((a, b) => b.gapPct - a.gapPct);
+      const top = attnRows.slice(0, 6);
+      let html = `<thead><tr>
+        <th colspan="5" style="text-align:left;padding:8px 10px 2px;font-size:9px;letter-spacing:1.5px;color:var(--text);font-weight:600;border-bottom:none;opacity:1">Needs Attention</th>
+      </tr><tr>
+        <th>Goal</th><th>Current</th><th>Target</th><th>Gap (#)</th><th>Gap (%)</th>
+      </tr></thead><tbody>`;
+      if (top.length === 0) {
+        html += `<tr class="na-empty"><td colspan="5">All goals on pace</td></tr>`;
+      } else {
+        top.forEach(r => {
+          html += `<tr>
+            <td>${r.name}</td>
+            <td>${r.currentFmt}</td>
+            <td>${r.targetFmt}</td>
+            <td class="na-gap-num">${r.gapNumFmt}</td>
+            <td class="na-gap-pct">−${r.gapPct.toFixed(1)}%</td>
+          </tr>`;
+        });
+      }
+      html += '</tbody>';
+      attnTable.innerHTML = html;
+    }
+  }
+
+  // ── CSV EXPORT HELPERS ────────────────────────────────────────────────────
+  function csvEscape(val) {
+    if (val === null || val === undefined) return '';
+    const s = String(val);
+    if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  }
+  function csvRow(arr) { return arr.map(csvEscape).join(','); }
+  function downloadCSV(filename, csvText) {
+    const blob = new Blob(['\ufeff' + csvText], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  }
+
+  function exportMonthCSV() {
+    if (!state.logMonth) return;
+    const [year, month] = state.logMonth.split('-').map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    const trackableGoals = state.goals
+      .filter(g => !SKIP_GOALS.includes(g.id))
+      .sort((a, b) => {
+        const ai = MONTHLY_LOG_GOAL_ORDER.indexOf(a.id);
+        const bi = MONTHLY_LOG_GOAL_ORDER.indexOf(b.id);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+
+    const dateCols = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      dateCols.push(`${state.logMonth}-${String(d).padStart(2,'0')}`);
+    }
+
+    const lines = [];
+    lines.push(csvRow(['Goal', ...dateCols]));
+    trackableGoals.forEach(g => {
+      const row = [g.metric];
+      dateCols.forEach(dateStr => {
+        const v = state.monthlyData`${[g.id}:${dateStr}`];
+        // Match on-screen display: treat 0/null/undefined as empty
+        row.push(v === undefined || v === null || v === 0 ? '' : v);
+      });
+      lines.push(csvRow(row));
+    });
+
+    downloadCSV(`monthly-log-${state.logMonth}.csv`, lines.join('\r\n'));
+    showAutoSaveStatus('Exported month');
+  }
+
+  function exportAllCSV() {
+    // Reads from already-loaded data (state.allRawLogs) — no API calls.
+    const allRows = (state.allRawLogs || []).slice();
+    allRows.sort((a, b) => a.date.localeCompare(b.date) || a.goal_id - b.goal_id);
+
+    const goalMap = {};
+    state.goals.forEach(g => { goalMap[g.id] = g; });
+
+    const lines = [csvRow(['date', 'goal_id', 'goal', 'unit', 'value'])];
+    allRows.forEach(r => {
+      const g = goalMap[r.goal_id] || {};
+      lines.push(csvRow([r.date, r.goal_id, g.metric || '', g.unit || '', r.value]));
+    });
+
+    downloadCSV('goals-tracker-all-data.csv', lines.join('\r\n'));
+    showAutoSaveStatus(`Exported ${allRows.length} entries`);
+  }
+
+  // ── MONTHLY LOG ───────────────────────────────────────────────────────────
+  async function loadMonthlyData() {
+    const data = await apiFetch(`/api/logs/monthly?month=${state.logMonth}`);
+    if (!data) return;
+    state.monthlyData = {};
+    data.forEach(r => { state.monthlyData`${r.goal_id}:${[r.date}`] = r.value; });
+  }
+
+  async function renderMonthly() {
+    await loadMonthlyData();
+
+    const [year, month] = state.logMonth.split('-').map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+
+    document.getElementById('month-label').innerText =
+      new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const trackableGoals = state.goals
+      .filter(g => !SKIP_GOALS.includes(g.id))
+      .sort((a, b) => {
+        const ai = MONTHLY_LOG_GOAL_ORDER.indexOf(a.id);
+        const bi = MONTHLY_LOG_GOAL_ORDER.indexOf(b.id);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+
+    const table = document.getElementById('monthly-table');
+    table.innerHTML = '';
+
+    // Header row
+    const thead = document.createElement('thead');
+    let hRow = '<tr><th class="goal-col">Goal</th>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${state.logMonth}-${String(d).padStart(2,'0')}`;
+      const isToday = dateStr === todayStr;
+      const isFuture = dateStr > todayStr;
+      const dayName = new Date(year, month - 1, d).toLocaleDateString('en-US', { weekday: 'short' });
+      hRow += `<th class="${isToday ? 'today-col' : ''}" data-date="${dateStr}">${dayName}<br>${d}</th>`;
+    }
+    hRow += '</tr>';
+    thead.innerHTML = hRow;
+    table.appendChild(thead);
+
+    // Body rows
+    const tbody = document.createElement('tbody');
+    trackableGoals.forEach(g => {
+      const row = document.createElement('tr');
+      let cells = `<td class="goal-name-cell">${g.metric}</td>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${state.logMonth}-${String(d).padStart(2,'0')}`;
+        const isFuture = dateStr > todayStr;
+        const isToday = dateStr === todayStr;
+        const existingVal = state.monthlyData`${[g.id}:${dateStr}`];
+        const hasData = existingVal !== undefined && existingVal !== null && existingVal !== 0;
+        const displayVal = hasData ? existingVal : '';
+        const placeholder = isFuture ? '' : '—';
+        cells += `
+          <td class="day-cell ${isToday ? 'today-col' : ''} ${isFuture ? 'future-col' : ''}">
+            <input
+              type="number" step="any"
+              class="day-input${hasData ? ' has-value' : ''}"
+              data-goal="${g.id}" data-date="${dateStr}"
+              value="${displayVal}"
+              placeholder="${placeholder}"
+              ${isFuture ? 'disabled' : ''}
+            >
+          </td>`;
+      }
+      row.innerHTML = cells;
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+
+    // Highlight filled inputs + auto-save on blur
+    table.querySelectorAll('.day-input').forEach(inp => {
+      inp.addEventListener('input', () => inp.classList.toggle('has-value', inp.value !== ''));
+      inp.addEventListener('blur',  () => saveCell(inp));
+    });
+  }
+
+  let _autoSaveTimer = null;
+  function showAutoSaveStatus(msg = 'Saved', isError = false) {
+    const el = document.getElementById('autosave-status');
+    if (!el) return;
+    if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
+    el.textContent = msg;
+    el.className = 'autosave-status visible' + (isError ? ' error' : '');
+    _autoSaveTimer = setTimeout(() => el.classList.remove('visible'), 2500);
+  }
+
+  async function saveCell(inp) {
+    const goalId = parseInt(inp.dataset.goal);
+    const date   = inp.dataset.date;
+    const raw    = inp.value.trim();
+
+    const entries   = [];
+    const deletions = [];
+
+    if (raw === '') {
+      deletions.push({ goal_id: goalId, date });
+    } else {
+      const value = parseFloat(raw);
+      if (isNaN(value)) return;
+      entries.push({ goal_id: goalId, date, value });
+    }
+
+    try {
+      await apiFetch('/api/log/daily', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ entries, deletions }),
+      });
+      inp.classList.toggle('has-value', raw !== '');
+      const key = `${goalId}:${date}`;
+      if (raw === '') delete state.monthlyData[key];
+      else state.monthlyData[key] = parseFloat(raw);
+
+      // Keep preloaded export dataset in sync so Export All reflects edits.
+      const idx = state.allRawLogs.findIndex(r => r.goal_id === goalId && r.date === date);
+      if (raw === '') {
+        if (idx !== -1) state.allRawLogs.splice(idx, 1);
+      } else {
+        const v = parseFloat(raw);
+        if (idx === -1) state.allRawLogs.push({ goal_id: goalId, date, value: v });
+        else            state.allRawLogs[idx].value = v;
+      }
+
+      state.logs = await apiFetch('/api/logs') || [];
+      renderDashboard();
+      showAutoSaveStatus('Saved');
+    } catch (e) {
+      showAutoSaveStatus('Save failed', true);
+    }
+  }
+
+  const trendChartInstances = {};
+
+  // ── TRENDS ────────────────────────────────────────────────────────────────
+  async function renderTrends() {
+    const container = document.getElementById('trends-container');
+    container.innerHTML = '';
+    Object.values(trendChartInstances).forEach(c => { try { c.destroy(); } catch(e) {} });
+    Object.keys(trendChartInstances).forEach(k => delete trendChartInstances[k]);
+
+    const pwd = sessionStorage.getItem('goals_pwd') || '';
+    const ft = id => fetch(`/api/logs/trends/${id}?pwd=${pwd}`)
+      .then(r => r.json())
+      .catch(() => ({ monthly: [], quarterly: [], weekly: [] }));
+    const [d1, d3, d4, d2, d6, d7, d8, d10, d11, d9] =
+      await Promise.all([1, 3, 4, 2, 6, 7, 8, 10, 11, 9].map(ft));
+
+    const GREEN = '#7fff6e', RED = '#ff5f5f', BLUE = '#6ea8ff', MUTED = '#64647a';
+
+    // Returns GREEN if the goal is currently on pace, RED if lagging, MUTED if no data
+    function goalColor(goalId) {
+      const CUMUL = [1, 3, 9, 13];
+      const g   = state.goals.find(g => g.id === goalId);
+      const log = state.logs.find(l => l.goal_id === goalId);
+      if (!g || !log || log.value == null) return MUTED;
+      const paceExpected = parseFloat(state.meta.pctOfYear || 0);
+      const onPace = CUMUL.includes(goalId)
+        ? (log.value / g.kpi) * 100 >= paceExpected
+        : (g.lower_is_better ? log.value <= g.kpi : log.value >= g.kpi);
+      return onPace ? GREEN : RED;
+    }
+
+    const xSc = {
+      ticks: { color: MUTED, font: { family: "'DM Mono'", size: 9 } },
+      grid: { color: 'rgba(255,255,255,0.04)' }, border: { color: '#334155' },
+    };
+    const ySc = () => ({
+      ticks: { color: MUTED, font: { family: "'DM Mono'", size: 9 } },
+      grid: { color: 'rgba(255,255,255,0.04)' }, border: { color: '#334155' }, beginAtZero: true,
+    });
+    const ttip = { backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1, titleColor: '#e8e8f2', bodyColor: MUTED };
+
+    function an(v, c, lbl) {
+      return {
+        type: 'line', yMin: v, yMax: v, borderColor: c, borderWidth: 1.5, borderDash: [5, 5],
+        label: { display: true, content: lbl, position: 'end', backgroundColor: 'transparent', color: c, font: { family: "'DM Mono'", size: 8 }, yAdjust: -8 },
+      };
+    }
+    function tC(id, cfg) {
+      const el = document.getElementById(id); if (!el) return;
+      if (trendChartInstances[id]) trendChartInstances[id].destroy();
+      trendChartInstances[id] = new Chart(el, cfg);
+    }
+    function bar(labels, data, clr, limit, lLbl) {
+      const lowerIsBetter = clr === RED;
+      const bgColors = (limit != null)
+        ? data.map(v => v != null ? ((lowerIsBetter ? v <= limit : v >= limit) ? GREEN : RED) + '38' : MUTED + '22')
+        : clr + '38';
+      const bdColors = (limit != null)
+        ? data.map(v => v != null ? ((lowerIsBetter ? v <= limit : v >= limit) ? GREEN : RED) + '88' : MUTED + '44')
+        : clr + '88';
+      return {
+        type: 'bar',
+        data: { labels, datasets: [{ data, backgroundColor: bgColors, borderColor: bdColors, borderWidth: 1, borderRadius: 3 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: ttip,
+            annotation: limit != null ? { annotations: { l: an(limit, clr, lLbl) } } : {} },
+          scales: { x: xSc, y: ySc() },
+        },
+      };
+    }
+    function line(labels, data, clr, limit, lLbl) {
+      const annotClr = lLbl && lLbl.startsWith('LIMIT') ? RED : GREEN;
+      return {
+        type: 'line',
+        data: { labels, datasets: [{ data, borderColor: clr, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 2.5, pointBackgroundColor: clr, tension: 0.25, fill: false }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: ttip,
+            annotation: limit != null ? { annotations: { l: an(limit, annotClr, lLbl) } } : {} },
+          scales: { x: xSc, y: ySc() },
+        },
+      };
+    }
+    function multiLine(labels, datasets, annotations) {
+      return {
+        type: 'line', data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: true, labels: { color: MUTED, font: { size: 9 }, boxWidth: 12 } }, tooltip: ttip, annotation: { annotations: annotations || {} } },
+          scales: { x: xSc, y: ySc() },
+        },
+      };
+    }
+    function groupedBar(labels, datasets) {
+      return {
+        type: 'bar', data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: true, labels: { color: MUTED, font: { size: 9 }, boxWidth: 12 } }, tooltip: ttip },
+          scales: { x: xSc, y: ySc() },
+        },
+      };
+    }
+    function addSection(gid, name, charts) {
+      const sec = document.createElement('div');
+      sec.className = 'trend-section';
+      const rowCls = 'trend-charts-row' + (charts.length === 1 ? ' one-col' : '');
+      const cardsHtml = charts.map((c, i) =>
+        `<div class="trend-chart-card"><div class="trend-chart-title">${c.title}</div><div style="height:180px;position:relative"><canvas id="tc-${gid}-${i}"></canvas></div></div>`
+      ).join('');
+      sec.innerHTML = `<div class="trend-section-header">${name}</div><div class="${rowCls}">${cardsHtml}</div>`;
+      container.appendChild(sec);
+      setTimeout(() => charts.forEach((c, i) => tC(`tc-${gid}-${i}`, c.cfg)), 20);
+    }
+
+    const ML = d => d.monthly.map(m => m.label);
+    const QL = d => d.quarterly.map(q => q.label);
+    const WL = d => d.weekly.map(w => w.label);
+
+    // ── 0. CORRELATIONS ───────────────────────────────────────────────────────
+    const YELLOW = '#ffd166';
+    {
+      const corrLabels = d2.weekly.map(w => w.label);
+      const scData  = d2.weekly.map(w => +w.avg.toFixed(2));
+      const exData  = d6.weekly.map(w => +w.avg.toFixed(2));
+      const wlbMap  = Object.fromEntries(d4.weekly.map(w => w.label, +([w.total / 7).toFixed(2)]));
+      const wlbData = corrLabels.map(lbl => wlbMap[lbl] != null ? wlbMap[lbl] : 0);
+      const hasData = scData.some(v => v > 0) || exData.some(v => v > 0) || wlbData.some(v => v > 0);
+      const surfMap  = Object.fromEntries(d3.weekly.map(w => w.label, +([w.total / 7).toFixed(2)]));
+      const surfData = corrLabels.map(lbl => surfMap[lbl] != null ? surfMap[lbl] : 0);
+
+      const corrSec = document.createElement('div');
+      corrSec.className = 'trend-section';
+      corrSec.innerHTML = `
+        <div class="trend-section-header">CORRELATIONS</div>
+        <div class="trend-charts-row full-col">
+          <div class="trend-chart-card">
+            <div class="trend-chart-title">SCREEN TIME VS EXERCISE VS WORK HOURS — WEEKLY TREND</div>
+            <div style="height:240px;position:relative"><canvas id="tc-corr-0"></canvas></div>
+          </div>
+          <div class="trend-chart-card">
+            <div class="trend-chart-title">EXERCISE VS SURF — WEEKLY AVG HRS/DAY</div>
+            <div style="height:240px;position:relative"><canvas id="tc-corr-1"></canvas></div>
+          </div>
+        </div>`;
+      container.appendChild(corrSec);
+
+      setTimeout(() => {
+        const el = document.getElementById('tc-corr-0'); if (!el) return;
+        if (trendChartInstances['tc-corr-0']) trendChartInstances['tc-corr-0'].destroy();
+        if (!hasData) {
+          el.parentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#64647a;font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:1px;">NO DATA</div>';
+          return;
+        }
+        trendChartInstances['tc-corr-0'] = new Chart(el, {
+          type: 'line',
+          data: {
+            labels: corrLabels,
+            datasets: [
+              { label: 'Screen Time (hrs/day)', data: scData,  borderColor: RED,    backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, pointBackgroundColor: RED,    tension: 0.25 },
+              { label: 'Exercise (hrs/day)',    data: exData,  borderColor: GREEN,  backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, pointBackgroundColor: GREEN,  tension: 0.25 },
+              { label: 'Work (hrs/day)',        data: wlbData, borderColor: YELLOW, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, pointBackgroundColor: YELLOW, tension: 0.25 },
+            ],
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: true, position: 'top', labels: { color: MUTED, font: { family: "'DM Mono'", size: 10 }, boxWidth: 16, padding: 14 } },
+              tooltip: { ...ttip, mode: 'index', intersect: false },
+            },
+            scales: {
+              x: xSc,
+              y: { ...ySc(), title: { display: true, text: 'hrs / day', color: MUTED, font: { family: "'DM Mono'", size: 9 } } },
+            },
+          },
+        });
+
+        const el1 = document.getElementById('tc-corr-1'); if (!el1) return;
+        if (trendChartInstances['tc-corr-1']) trendChartInstances['tc-corr-1'].destroy();
+        trendChartInstances['tc-corr-1'] = new Chart(el1, {
+          type: 'line',
+          data: {
+            labels: corrLabels,
+            datasets: [
+              { label: 'Exercise (hrs/day)', data: exData,   borderColor: GREEN, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, pointBackgroundColor: GREEN, tension: 0.25 },
+              { label: 'Surf (hrs/day)',     data: surfData, borderColor: BLUE,  backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, pointBackgroundColor: BLUE,  tension: 0.25 },
+            ],
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: true, position: 'top', labels: { color: MUTED, font: { family: "'DM Mono'", size: 10 }, boxWidth: 16, padding: 14 } },
+              tooltip: { ...ttip, mode: 'index', intersect: false },
+            },
+            scales: {
+              x: xSc,
+              y: { ...ySc(), title: { display: true, text: 'hrs / day', color: MUTED, font: { family: "'DM Mono'", size: 9 } } },
+            },
+          },
+        });
+      }, 20);
+    }
+
+    // ── 1. SAVE $100K ─────────────────────────────────────────────────────────
+    addSection(1, 'SAVE $100K', [
+      { title: 'MONTHLY CONTRIBUTIONS ($K)', cfg: bar(ML(d1), d1.monthly.map(m => +m.total.toFixed(2)), GREEN, 8.33, 'TARGET $8.33k') },
+      { title: 'QUARTERLY CONTRIBUTIONS ($K)', cfg: bar(QL(d1), d1.quarterly.map(q => +q.total.toFixed(2)), GREEN, 25, 'TARGET $25k') },
+      { title: 'CUMULATIVE PROGRESS ($K)', cfg: line(WL(d1), d1.weekly.map(w => +w.cumulative.toFixed(2)), goalColor(1), 100, 'GOAL $100k') },
+    ]);
+
+    // ── 2. SURF 150 HOURS ─────────────────────────────────────────────────────
+    const surfTrail = d3.weekly.map((w, i) => {
+      const prev = d3.weekly[i-1] || { total: 0, count: 0 };
+      const days = (w.count || 0) + (prev.count || 0);
+      return days > 0 ? +((w.total + prev.total) / 14).toFixed(2) : 0;
+    });
+    addSection(3, 'SURF 150 HOURS', [
+      { title: 'MONTHLY HOURS & SESSIONS', cfg: groupedBar(ML(d3), [
+          { label: 'Hours', data: d3.monthly.map(m => +m.total.toFixed(1)), backgroundColor: GREEN+'44', borderColor: GREEN+'88', borderWidth: 1, borderRadius: 3 },
+          { label: 'Sessions', data: d3.monthly.map(m => m.sessions), backgroundColor: BLUE+'44', borderColor: BLUE+'88', borderWidth: 1, borderRadius: 3 },
+        ]) },
+      { title: 'CUMULATIVE HOURS & SESSIONS', cfg: multiLine(WL(d3), [
+          { label: 'Hrs', data: d3.weekly.map(w => +w.cumulative.toFixed(1)), borderColor: GREEN, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 2, tension: 0.25 },
+          { label: 'Sessions', data: d3.weekly.map(w => w.cumSessions), borderColor: BLUE, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 2, tension: 0.25 },
+        ], { g: an(150, GREEN, 'GOAL 150hr') }) },
+      { title: 'TRAILING 2-WEEK AVG HOURS/DAY', cfg: line(WL(d3), surfTrail, goalColor(3)) },
+    ]);
+
+    // ── 3. WORK LIFE BALANCE ──────────────────────────────────────────────────
+    // Data is logged daily; weekly hrs = sum of daily logs in that Mon–Sun week
+    const wlbMonthly = d4.monthly.map(m => m.elapsedDays > 0 ? +(m.total / (m.elapsedDays / 7)).toFixed(1) : 0);
+    const wlbQuarterly = d4.quarterly.map(q => q.elapsedDays > 0 ? +(q.total / (q.elapsedDays / 7)).toFixed(1) : 0);
+    addSection(4, 'WORK LIFE BALANCE', [
+      { title: 'MONTHLY AVG HOURS/WEEK', cfg: bar(ML(d4), wlbMonthly, RED, 50, 'LIMIT 50hrs') },
+      { title: 'QUARTERLY AVG HOURS/WEEK', cfg: bar(QL(d4), wlbQuarterly, RED, 50, 'LIMIT 50hrs') },
+      { title: 'WEEKLY TREND', cfg: line(WL(d4), d4.weekly.map(w => +w.total.toFixed(1)), goalColor(4), 50, 'LIMIT 50hrs') },
+    ]);
+
+    // ── 4. SCREEN TIME ────────────────────────────────────────────────────────
+    addSection(2, 'SCREEN TIME', [
+      { title: 'MONTHLY AVG HOURS/DAY', cfg: bar(ML(d2), d2.monthly.map(m => +m.avg.toFixed(2)), RED, 1.5, 'LIMIT 1.5hrs') },
+      { title: 'QUARTERLY AVG HOURS/DAY', cfg: bar(QL(d2), d2.quarterly.map(q => +q.avg.toFixed(2)), RED, 1.5, 'LIMIT 1.5hrs') },
+      { title: 'WEEKLY TREND', cfg: line(WL(d2), d2.weekly.map(w => +w.avg.toFixed(2)), goalColor(2), 1.5, 'LIMIT 1.5hrs') },
+    ]);
+
+    // ── 5. BEAT THE MARKET ────────────────────────────────────────────────────
+    const myRet = getVal(5) || 0;
+    const sp500 = parseFloat(state.meta.market?.sp500) || 0;
+    const vti   = parseFloat(state.meta.market?.vti)   || 0;
+    const myClr = myRet >= Math.max(sp500, vti) ? GREEN : RED;
+    addSection(5, 'BEAT THE MARKET', [
+      { title: 'YTD RETURNS COMPARISON (%)', cfg: {
+          type: 'bar',
+          data: { labels: ['My Return', 'S&P 500', 'Total Market'],
+            datasets: [{ data: [myRet, sp500, vti],
+              backgroundColor: [myClr+'44', MUTED+'33', MUTED+'33'],
+              borderColor: [myClr+'99', MUTED+'66', MUTED+'66'],
+              borderWidth: 1, borderRadius: 3 }] },
+          options: { responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: ttip },
+            scales: { x: xSc, y: ySc() } },
+        } },
+    ]);
+
+    // ── 6. EXERCISE ───────────────────────────────────────────────────────────
+    addSection(6, 'EXERCISE', [
+      { title: 'MONTHLY AVG HOURS/DAY', cfg: bar(ML(d6), d6.monthly.map(m => +m.avg.toFixed(2)), GREEN, 1, 'TARGET 1hr') },
+      { title: 'QUARTERLY AVG HOURS/DAY', cfg: bar(QL(d6), d6.quarterly.map(q => +q.avg.toFixed(2)), GREEN, 1, 'TARGET 1hr') },
+      { title: 'WEEKLY TREND', cfg: line(WL(d6), d6.weekly.map(w => +w.avg.toFixed(2)), goalColor(6), 1, 'TARGET 1hr') },
+    ]);
+
+    // helper: avg per week = total / (elapsed days / 7), zero for future periods
+    const rateM = d => d.monthly.map(m   => m.elapsedDays > 0 ? +(m.total / (m.elapsedDays / 7)).toFixed(2) : 0);
+    const rateQ = d => d.quarterly.map(q => q.elapsedDays > 0 ? +(q.total / (q.elapsedDays / 7)).toFixed(2) : 0);
+
+    // ── 7. FAMILY ─────────────────────────────────────────────────────────────
+    addSection(7, 'FAMILY', [
+      { title: 'MONTHLY AVG CATCH-UPS/WEEK',   cfg: bar(ML(d7), rateM(d7), GREEN, 2, 'TARGET 2/wk') },
+      { title: 'QUARTERLY AVG CATCH-UPS/WEEK', cfg: bar(QL(d7), rateQ(d7), GREEN, 2, 'TARGET 2/wk') },
+      { title: 'WEEKLY TREND', cfg: line(WL(d7), d7.weekly.map(w => +w.total.toFixed(1)), goalColor(7), 2, 'TARGET 2/wk') },
+    ]);
+
+    // ── 8. FRIENDS ────────────────────────────────────────────────────────────
+    addSection(8, 'FRIENDS', [
+      { title: 'MONTHLY AVG CATCH-UPS/WEEK',   cfg: bar(ML(d8), rateM(d8), GREEN, 2, 'TARGET 2/wk') },
+      { title: 'QUARTERLY AVG CATCH-UPS/WEEK', cfg: bar(QL(d8), rateQ(d8), GREEN, 2, 'TARGET 2/wk') },
+      { title: 'WEEKLY TREND', cfg: line(WL(d8), d8.weekly.map(w => +w.total.toFixed(1)), goalColor(8), 2, 'TARGET 2/wk') },
+    ]);
+
+    // ── 9. STRETCHING ─────────────────────────────────────────────────────────
+    addSection(10, 'STRETCHING', [
+      { title: 'MONTHLY AVG SESSIONS/WEEK',   cfg: bar(ML(d10), rateM(d10), GREEN, 3, 'TARGET 3/wk') },
+      { title: 'QUARTERLY AVG SESSIONS/WEEK', cfg: bar(QL(d10), rateQ(d10), GREEN, 3, 'TARGET 3/wk') },
+      { title: 'WEEKLY TREND', cfg: line(WL(d10), d10.weekly.map(w => +w.total.toFixed(1)), goalColor(10), 3, 'TARGET 3/wk') },
+    ]);
+
+    // ── 10. ALCOHOL ───────────────────────────────────────────────────────────
+    addSection(11, 'ALCOHOL', [
+      { title: 'MONTHLY AVG DAYS DRINKING/WEEK',   cfg: bar(ML(d11), rateM(d11), RED, 1, 'LIMIT 1/wk') },
+      { title: 'QUARTERLY AVG DAYS DRINKING/WEEK', cfg: bar(QL(d11), rateQ(d11), RED, 1, 'LIMIT 1/wk') },
+      { title: 'WEEKLY TREND', cfg: line(WL(d11), d11.weekly.map(w => +w.total.toFixed(1)), goalColor(11), 1, 'LIMIT 1/wk') },
+    ]);
+
+    // ── 11. READING ───────────────────────────────────────────────────────────
+    addSection(9, 'READING', [
+      { title: 'BOOKS FINISHED PER MONTH', cfg: bar(ML(d9), d9.monthly.map(m => m.total), GREEN, 1.25, 'TARGET 1.25/mo') },
+      { title: 'BOOKS FINISHED PER QUARTER', cfg: bar(QL(d9), d9.quarterly.map(q => q.total), GREEN, 3.75, 'TARGET 3.75/qtr') },
+      { title: 'CUMULATIVE BOOKS READ', cfg: line(WL(d9), d9.weekly.map(w => +w.cumulative.toFixed(1)), goalColor(9), 15, 'GOAL 15') },
+    ]);
+  }
+
+  // ── YEAR VIEW ─────────────────────────────────────────────────────────────
+  const HOLIDAYS_2026 = {
+    '2026-01-01': "New Year's Day",
+    '2026-01-19': 'MLK Day',
+    '2026-02-16': "Presidents' Day",
+    '2026-05-25': 'Memorial Day',
+    '2026-06-19': 'Juneteenth',
+    '2026-07-04': 'Independence Day',
+    '2026-09-07': 'Labor Day',
+    '2026-10-12': 'Columbus Day',
+    '2026-11-11': 'Veterans Day',
+    '2026-11-26': 'Thanksgiving',
+    '2026-12-25': 'Christmas Day',
+  };
+
+  let yearViewData      = null; // cache so re-clicking tab doesn't re-fetch
+  let cachedNotes       = [];
+  let cachedEvents      = [];
+  let cachedEmojisMap   = {}; // { 'YYYY-MM-DD': ['⛷️', '🎉', ...] }
+  let cachedEventSlots  = new Map(); // ev.id -> slot index
+  let cachedGlobalMaxSlot = -1;
+
+  function assignSlots(events) {
+    const sorted = [...events].sort((a, b) =>
+      a.start_date < b.start_date ? -1 : a.start_date > b.start_date ? 1 :
+      (new Date(b.end_date) - new Date(b.start_date)) - (new Date(a.end_date) - new Date(a.start_date))
+    );
+    const slotEnd = [];
+    const map = new Map();
+    sorted.forEach(ev => {
+      let s = 0;
+      while (slotEnd[s] && slotEnd[s] >= ev.start_date) s++;
+      slotEnd[s] = ev.end_date;
+      map.set(ev.id, s);
+    });
+    return map;
+  }
+
+  async function renderYearView() {
+    const container = document.getElementById('year-view-container');
+    if (!container) return;
+    container.innerHTML = `<div style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;padding:20px;">Loading…</div>`;
+
+    // Fetch year-view data, note-existence data, all notes, and emojis in parallel
+    const [yvData, notesData, allNotesData, emojisData] = await Promise.all([
+      apiFetch('/api/year-view/2026'),
+      apiFetch('/api/notes/exists'),
+      apiFetch('/api/notes'),
+      apiFetch('/api/emojis'),
+    ]);
+    if (!yvData) return;
+    yearViewData = yvData;
+    cachedNotes = allNotesData?.notes || [];
+    cachedEmojisMap = emojisData || {};
+    const notesDates = new Set((notesData?.dates) || []);
+    renderNotesSidebar(cachedNotes);
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const [ty, tm, td] = todayStr.split('-').map(Number);
+
+    const MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const DOW          = ['S','M','T','W','T','F','S'];
+    const SCORE_COLORS = { 3:'rgba(134,239,172,0.38)', 2:'rgba(253,230,138,0.38)', 1:'rgba(253,186,116,0.38)', 0:'rgba(252,165,165,0.38)' };
+
+    function isFuture(y, m, d) {
+      if (y > ty) return true;
+      if (y < ty) return false;
+      if (m > tm) return true;
+      if (m < tm) return false;
+      return d > td;
+    }
+
+    function scoreDay(dateStr) {
+      const d = yearViewData[dateStr];
+      if (!d || (d.exercise == null && d.work == null && d.screenTime == null)) return null;
+      let s = 0;
+      if (d.exercise   != null && d.exercise   >= 1)   s++;
+      if (d.work       != null && d.work       <= 10)  s++;
+      if (d.screenTime != null && d.screenTime <= 1.5) s++;
+      return s;
+    }
+
+    container.innerHTML = '';
+    document.getElementById('year-view-legend').innerHTML = '';
+
+    // ── Legend
+    const legendItems = [
+      ['rgba(134,239,172,0.38)','All 3 met'],['rgba(253,230,138,0.38)','2 of 3 met'],['rgba(253,186,116,0.38)','1 of 3 met'],
+      ['rgba(252,165,165,0.38)','0 of 3 met'],['#4b5563','No data'],['#1f2937','Future'],
+    ];
+    const keyBox = document.createElement('div');
+    keyBox.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:20px;background:var(--surface);display:inline-flex;flex-direction:column;gap:10px;';
+    keyBox.innerHTML = `
+      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:2px;">Daily Targets</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;">
+        ${[['Exercise','≥ 1 hr / day'],['Work','≤ 10 hrs / day'],['Screen Time','≤ 1.5 hrs / day']].map(([label, rule]) =>
+          `<div style="display:flex;align-items:center;gap:7px;">
+            <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text)">${label}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)">${rule}</span>
+          </div>`).join('')}
+      </div>
+      <div style="height:1px;background:var(--border);"></div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;">
+        ${legendItems.map(([c,l]) =>
+          `<div class="year-legend-item"><div class="year-legend-dot" style="background:${c}"></div><span>${l}</span></div>`
+        ).join('')}
+      </div>`;
+    document.getElementById('year-view-legend').appendChild(keyBox);
+
+    // ── Month grid
+    const grid = document.createElement('div');
+    grid.className = 'year-month-grid';
+
+    for (let m = 0; m < 12; m++) {
+      const card = document.createElement('div');
+      card.className = 'year-month-card';
+      const firstDow   = new Date(2026, m, 1).getDay();
+      const daysInMonth = new Date(2026, m + 1, 0).getDate();
+
+      let html = `<div class="year-month-name">${MONTHS_FULL[m]}</div>`;
+      html += `<div class="year-dow-row">${DOW.map(d => `<div class="year-dow-label">${d}</div>`).join('')}</div>`;
+      html += `<div class="year-days-grid">`;
+
+      for (let i = 0; i < firstDow; i++) html += `<div class="day-sq empty"></div>`;
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `2026-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const fut = isFuture(2026, m + 1, day);
+        let cls;
+        if (fut) {
+          cls = 'future';
+        } else {
+          const s = scoreDay(dateStr);
+          cls = s === null ? 'no-data' : 'score-' + s;
+        }
+        const d = yearViewData[dateStr];
+        const hasSurf    = d?.surf    != null && d.surf    > 0;
+        const hasNote    = notesDates.has(dateStr) || d?.hasNote;
+        const autoList   = [hasSurf ? '🌊' : '', hasNote ? '✏️' : ''].filter(Boolean);
+        const manual     = cachedEmojisMap[dateStr] || [];
+        const allIcons   = [...autoList, ...manual].slice(0, 4);
+        const icons      = allIcons.map(e => `<span>${e}</span>`).join('');
+        html += `<div class="day-sq ${cls}" data-date="${dateStr}">` +
+          `<span class="day-sq-top">` +
+            `<span class="day-sq-num"${HOLIDAYS_2026[dateStr] ? ' style="color:#f87171"' : ''}>${day}</span>` +
+            (icons ? `<span class="day-sq-icons">${icons}</span>` : '') +
+          `</span>` +
+          `</div>`;
+      }
+      html += `</div>`;
+      card.innerHTML = html;
+      grid.appendChild(card);
+    }
+    container.appendChild(grid);
+
+    // ── Month card click → drilldown
+    container.querySelectorAll('.year-month-card').forEach((card, idx) => {
+      card.style.cursor = 'pointer';
+      const nameEl = card.querySelector('.year-month-name');
+      if (nameEl) {
+        nameEl.style.textDecoration = 'underline';
+        nameEl.style.textDecorationColor = 'rgba(255,255,255,0.25)';
+        nameEl.title = 'Click to expand month';
+      }
+      card.addEventListener('click', e => {
+        if (e.target.closest('.day-sq')) return;
+        openMonthDrilldown(idx);
+      });
+    });
+
+    fetchAndRenderEvents();
+
+    // ── Tooltip & click handlers
+    const tooltip = document.getElementById('day-tooltip');
+
+    container.querySelectorAll('.day-sq[data-date]').forEach(sq => {
+      sq.addEventListener('mouseenter', () => {
+        const dateStr = sq.dataset.date;
+        const d = yearViewData[dateStr];
+        const [sy, sm, sday] = dateStr.split('-').map(Number);
+        if (isFuture(sy, sm, sday)) return;
+
+        const dt  = new Date(dateStr + 'T12:00:00');
+        const fmt = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        let html  = `<div class="tt-date">${fmt}</div>`;
+
+        if (!d || (d.exercise == null && d.work == null && d.screenTime == null)) {
+          html += `<div style="color:#64647a;">No data logged</div>`;
+        } else {
+          const exV  = d.exercise   != null ? d.exercise.toFixed(2)   + ' hrs' : '—';
+          const wkV  = d.work       != null ? d.work.toFixed(1)       + ' hrs' : '—';
+          const scV  = d.screenTime != null ? d.screenTime.toFixed(2) + ' hrs' : '—';
+          const exOk = d.exercise   != null && d.exercise   >= 1;
+          const wkOk = d.work       != null && d.work       <= 10;
+          const scOk = d.screenTime != null && d.screenTime <= 1.5;
+          html += `<div><span class="${exOk?'tt-pass':'tt-fail'}">${exOk?'✓':'✗'}</span> Exercise: ${exV}</div>`;
+          html += `<div><span class="${wkOk?'tt-pass':'tt-fail'}">${wkOk?'✓':'✗'}</span> Work: ${wkV}</div>`;
+          html += `<div><span class="${scOk?'tt-pass':'tt-fail'}">${scOk?'✓':'✗'}</span> Screen: ${scV}</div>`;
+        }
+        tooltip.innerHTML = html;
+        tooltip.style.display = 'block';
+      });
+
+      sq.addEventListener('mousemove', e => {
+        const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+        const x  = e.clientX + 14, y = e.clientY + 14;
+        tooltip.style.left = (x + tw > window.innerWidth  - 8 ? e.clientX - tw - 14 : x) + 'px';
+        tooltip.style.top  = (y + th > window.innerHeight - 8 ? e.clientY - th - 14 : y) + 'px';
+      });
+
+      sq.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+      sq.addEventListener('click', () => {
+        const dateStr = sq.dataset.date;
+        openDayModal(dateStr);
+      });
+    });
+  }
+
+  // ── OPEN DAY MODAL ────────────────────────────────────────────────────────
+  async function openDayModal(dateStr) {
+    const d   = (yearViewData && yearViewData[dateStr]) || {};
+    const dt  = new Date(dateStr + 'T12:00:00');
+    const fmt = dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    document.getElementById('modal-date').textContent = fmt;
+    const holidayEl = document.getElementById('modal-holiday');
+    holidayEl.textContent = HOLIDAYS_2026[dateStr] || '';
+    holidayEl.style.display = HOLIDAYS_2026[dateStr] ? '' : 'none';
+    const exV  = d.exercise   != null ? d.exercise.toFixed(2)   + ' hrs' : '—';
+    const wkV  = d.work       != null ? d.work.toFixed(1)       + ' hrs' : '—';
+    const scV  = d.screenTime != null ? d.screenTime.toFixed(2) + ' hrs' : '—';
+    const exOk = d.exercise   != null && d.exercise   >= 1;
+    const wkOk = d.work       != null && d.work       <= 10;
+    const scOk = d.screenTime != null && d.screenTime <= 1.5;
+    const mkRow = (name, goal, val, ok) => `
+      <div class="modal-metric-row">
+        <span class="modal-metric-name">${name}</span>
+        <span class="modal-metric-goal">${goal}</span>
+        <span class="modal-metric-val">${val}</span>
+        <span class="modal-check" style="color:${ok?'#7fff6e':'#ff5f5f'}">${ok?'✓':'✗'}</span>
+      </div>`;
+    document.getElementById('modal-metrics-body').innerHTML =
+      mkRow('Exercise',    '≥ 1 hr',    exV,  exOk) +
+      mkRow('Work Hours',  '≤ 10 hrs',  wkV,  wkOk) +
+      mkRow('Screen Time', '≤ 1.5 hrs', scV,  scOk);
+    const [noteRes, surfSessions] = await Promise.all([
+      apiFetch(`/api/notes/${dateStr}`),
+      apiFetch(`/api/surf-sessions/${dateStr}`)
+    ]);
+    document.getElementById('modal-notes-ta').value = noteRes ? (noteRes.note || '') : '';
+    selectedEmojis = (noteRes?.emojis || '').split(',').filter(Boolean);
+    syncEmojiPicker();
+    renderSurfSessionCards(surfSessions || []);
+    document.getElementById('modal-save-btn').dataset.date = dateStr;
+    document.getElementById('modal-save-status').style.display = 'none';
+    document.getElementById('day-modal').classList.add('open');
+  }
+
+  // ── NOTES SIDEBAR ─────────────────────────────────────────────────────────
+  function renderNotesSidebar(notes) {
+    const body = document.getElementById('notes-sidebar-body');
+    if (!body) return;
+    if (!notes || notes.length === 0) {
+      body.innerHTML = `<div style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;padding:4px 0;">No notes yet.</div>`;
+      return;
+    }
+    const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    body.innerHTML = notes.map(({ date, note }) => {
+      const [, m, d] = date.split('-').map(Number);
+      const label = `${MONTHS_SHORT[m-1]} ${d}`;
+      const escaped = note.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<div class="note-entry" data-date="${date}">
+        <span class="note-entry-date">${label}</span>
+        <span class="note-entry-text">${escaped}</span>
+      </div>`;
+    }).join('');
+    body.querySelectorAll('.note-entry').forEach(el => {
+      el.addEventListener('click', () => openDayModal(el.dataset.date));
+    });
+  }
+
+  // ── EVENTS ────────────────────────────────────────────────────────────────
+  async function fetchAndRenderEvents() {
+    const data = await apiFetch('/api/events');
+    cachedEvents = data?.events || [];
+
+    // Render chips row
+    const chipsRow = document.getElementById('event-chips-row');
+    if (!chipsRow) return;
+    const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function fmtEvtDate(d) {
+      const [,m,day] = d.split('-').map(Number);
+      return `${MONTHS_SHORT[m-1]} ${day}`;
+    }
+    chipsRow.innerHTML = cachedEvents.map(ev => `
+      <div class="event-chip" data-id="${ev.id}">
+        <div class="event-chip-dot" style="background:${ev.color}"></div>
+        <span>${ev.name}</span>
+        <span style="color:var(--muted);font-size:9px;">${fmtEvtDate(ev.start_date)}–${fmtEvtDate(ev.end_date)}</span>
+        <span class="event-chip-del" data-id="${ev.id}">×</span>
+      </div>`).join('') +
+      `<button class="add-event-btn" id="open-add-event-btn">+ Add Event</button>`;
+
+    chipsRow.querySelectorAll('.event-chip').forEach(chip => {
+      const ev = cachedEvents.find(e => String(e.id) === chip.dataset.id);
+      if (!ev) return;
+      chip.addEventListener('click', e => {
+        if (e.target.classList.contains('event-chip-del')) return;
+        openEditEventModal(ev);
+      });
+    });
+    chipsRow.querySelectorAll('.event-chip-del').forEach(btn => {
+      btn.onclick = async e => {
+        e.stopPropagation();
+        await apiFetch(`/api/events/${btn.dataset.id}`, { method: 'DELETE' });
+        fetchAndRenderEvents();
+      };
+    });
+    const openBtn = document.getElementById('open-add-event-btn');
+    if (openBtn) openBtn.onclick = () => { editingEventId = null; document.getElementById('add-event-modal').classList.add('open'); };
+
+    // Clear existing event bars from year-view squares
+    document.querySelectorAll('.day-sq .event-bars-wrap').forEach(el => el.remove());
+
+    // Collect all dates in a range as an array
+    function dateRange(start, end) {
+      const dates = [];
+      const cur = new Date(start + 'T12:00:00');
+      const endD = new Date(end + 'T12:00:00');
+      while (cur <= endD) { dates.push(cur.toISOString().slice(0,10)); cur.setDate(cur.getDate() + 1); }
+      return dates;
+    }
+
+    // Assign stable vertical slots (stored in module-level cache for drilldown use)
+    cachedEventSlots    = assignSlots(cachedEvents);
+    cachedGlobalMaxSlot = cachedEventSlots.size ? Math.max(...cachedEventSlots.values()) : -1;
+    const eventSlots    = cachedEventSlots;
+    const globalMaxSlot = cachedGlobalMaxSlot;
+
+    // Collect bars per day keyed by slot
+    const daySlotMap = {}; // dateStr -> { slot: barData }
+    cachedEvents.forEach(ev => {
+      const slot = eventSlots.get(ev.id);
+      const dates = dateRange(ev.start_date, ev.end_date);
+      const total = dates.length;
+      dates.forEach((dateStr, i) => {
+        if (!daySlotMap[dateStr]) daySlotMap[dateStr] = {};
+        daySlotMap[dateStr][slot] = { ev, isFirst: i === 0, isLast: i === total - 1 };
+      });
+    });
+
+    // Render bars with placeholders to keep every event at a fixed vertical slot
+    Object.entries(daySlotMap).forEach(([dateStr, slotObj]) => {
+      const sq = document.querySelector(`.day-sq[data-date="${dateStr}"]`);
+      if (!sq) return;
+      let wrap = sq.querySelector('.event-bars-wrap');
+      if (!wrap) { wrap = document.createElement('div'); wrap.className = 'event-bars-wrap'; sq.appendChild(wrap); }
+      const maxSlot = globalMaxSlot;
+      for (let s = maxSlot; s >= 0; s--) {
+        const bd = slotObj[s];
+        if (!bd) {
+          const ph = document.createElement('div'); ph.className = 'event-bar-ph'; wrap.appendChild(ph);
+        } else {
+          const { ev, isFirst, isLast } = bd;
+          const pillCls = (isFirst && isLast) ? 'ep-lr' : isFirst ? 'ep-l' : isLast ? 'ep-r' : '';
+          const extCls  = (isFirst && isLast) ? '' : isFirst ? 'ep-xr' : isLast ? 'ep-xl' : 'ep-xlr';
+          const bar = document.createElement('div');
+          bar.className = 'event-bar' + (pillCls ? ' ' + pillCls : '') + (extCls ? ' ' + extCls : '');
+          bar.style.background = ev.color;
+          bar.title = ev.name;
+          if (isFirst) bar.textContent = ev.name;
+          bar.addEventListener('click', e => { e.stopPropagation(); openEditEventModal(ev); });
+          wrap.appendChild(bar);
+        }
+      }
+    });
+  }
+
+  // ── MONTH DRILLDOWN ───────────────────────────────────────────────────────
+  const MONTHS_FULL_DD = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DOW_DD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  function openMonthDrilldown(monthIdx) {
+    const drilldown = document.getElementById('month-drilldown');
+    const layout = document.getElementById('calendar-layout');
+    const legend = document.getElementById('year-view-legend');
+    const chipsRow = document.getElementById('event-chips-row');
+    if (!drilldown) return;
+
+    // Hide year view, show drilldown
+    layout.style.display = 'none';
+    legend.style.display = 'none';
+    chipsRow.style.display = 'none';
+    drilldown.classList.add('open');
+
+    const m = monthIdx; // 0-based
+    const daysInMonth = new Date(2026, m + 1, 0).getDate();
+    const firstDow = new Date(2026, m, 1).getDay();
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const [ty, tm, td] = todayStr.split('-').map(Number);
+
+    function isFutureDD(day) {
+      const y = 2026, mo = m + 1;
+      if (y > ty) return true; if (y < ty) return false;
+      if (mo > tm) return true; if (mo < tm) return false;
+      return day > td;
+    }
+
+    // Build notes lookup
+    const notesMap = {};
+    cachedNotes.forEach(n => { notesMap[n.date] = n.note; });
+
+    // Score colors (same rgba as calendar)
+    const SC = { 3:'rgba(134,239,172,0.38)', 2:'rgba(253,230,138,0.38)', 1:'rgba(253,186,116,0.38)', 0:'rgba(252,165,165,0.38)' };
+
+    function scoreDD(dateStr) {
+      if (!yearViewData) return null;
+      const d = yearViewData[dateStr];
+      if (!d || (d.exercise == null && d.work == null && d.screenTime == null)) return null;
+      let s = 0;
+      if (d.exercise   != null && d.exercise   >= 1)   s++;
+      if (d.work       != null && d.work       <= 10)  s++;
+      if (d.screenTime != null && d.screenTime <= 1.5) s++;
+      return s;
+    }
+
+    // Build day cells
+    let cells = '';
+    for (let i = 0; i < firstDow; i++) cells += `<div class="drilldown-day dd-empty"></div>`;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `2026-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const fut = isFutureDD(day);
+      const d = yearViewData?.[dateStr] || {};
+      const score = fut ? null : scoreDD(dateStr);
+      const bgColor = score !== null ? SC[score] : (fut ? 'rgba(31,41,55,0.6)' : 'rgba(75,85,99,0.25)');
+      const exV = d.exercise   != null ? d.exercise.toFixed(1)   + 'h' : '—';
+      const wkV = d.work       != null ? d.work.toFixed(1)       + 'h' : '—';
+      const scV = d.screenTime != null ? d.screenTime.toFixed(1) + 'h' : '—';
+      const note = notesMap[dateStr] || '';
+
+      // Emoji quad (auto + manual, same logic as year view)
+      const hasSurfDD = d?.surf != null && d.surf > 0;
+      const autoListDD = [hasSurfDD ? '🌊' : '', note.trim() ? '✏️' : ''].filter(Boolean);
+      const allIconsDD = [...autoListDD, ...(cachedEmojisMap[dateStr] || [])].slice(0, 4);
+      const iconsElDD = allIconsDD.length
+        ? `<div class="drilldown-day-icons">${allIconsDD.map(e => `<span>${e}</span>`).join('')}</div>`
+        : '';
+
+      // Event bars — slot-based so bars never shift vertically
+      const dayEvs = cachedEvents.filter(ev => dateStr >= ev.start_date && dateStr <= ev.end_date);
+      let evBars = '';
+      if (dayEvs.length > 0 && cachedGlobalMaxSlot >= 0) {
+        const slotObj = {};
+        dayEvs.forEach(ev => { slotObjcachedEventSlots.get([ev.id)] = ev; });
+        let barsHtml = '';
+        for (let s = cachedGlobalMaxSlot; s >= 0; s--) {
+          const ev = slotObj[s];
+          if (!ev) {
+            barsHtml += `<div class="event-bar-ph"></div>`;
+          } else {
+            const isFirst = dateStr === ev.start_date, isLast = dateStr === ev.end_date;
+            const pillCls = (isFirst && isLast) ? 'ep-lr' : isFirst ? 'ep-l' : isLast ? 'ep-r' : '';
+            const extCls  = (isFirst && isLast) ? '' : isFirst ? 'ep-xr' : isLast ? 'ep-xl' : 'ep-xlr';
+            const cls = 'event-bar' + (pillCls ? ' '+pillCls : '') + (extCls ? ' '+extCls : '');
+            barsHtml += `<div class="${cls}" data-ev-id="${ev.id}" title="${ev.name}" style="background:${ev.color}">${isFirst?ev.name:''}</div>`;
+          }
+        }
+        evBars = `<div class="event-bars-wrap">${barsHtml}</div>`;
+      }
+
+      cells += `<div class="drilldown-day${fut?' dd-future':''}" data-date="${dateStr}" style="background:${bgColor}">
+        <div class="drilldown-day-top">
+          <div class="drilldown-day-num"${HOLIDAYS_2026[dateStr] ? ' style="color:#f87171"' : ''}>${day}</div>
+          ${iconsElDD}
+        </div>
+        ${HOLIDAYS_2026[dateStr] ? `<div class="drilldown-holiday">${HOLIDAYS_2026[dateStr]}</div>` : ''}
+        ${note ? `<div class="drilldown-note">${note.replace(/</g,'&lt;')}</div>` : ''}
+        ${evBars}
+      </div>`;
+    }
+
+    drilldown.innerHTML = `
+      <div class="drilldown-header">
+        <button class="drilldown-back" id="dd-back-btn">← Back</button>
+        <div class="drilldown-month-name">${MONTHS_FULL_DD[m]}</div>
+      </div>
+      <div class="drilldown-grid">
+        ${DOW_DD.map(d => `<div class="drilldown-dow">${d}</div>`).join('')}
+        ${cells}
+      </div>`;
+
+    document.getElementById('dd-back-btn').onclick = () => {
+      drilldown.classList.remove('open');
+      layout.style.display = '';
+      legend.style.display = '';
+      chipsRow.style.display = '';
+    };
+
+    drilldown.querySelectorAll('.drilldown-day[data-date]').forEach(cell => {
+      cell.addEventListener('click', () => openDayModal(cell.dataset.date));
+    });
+
+    drilldown.querySelectorAll('.event-bar[data-ev-id]').forEach(bar => {
+      bar.addEventListener('click', e => {
+        e.stopPropagation();
+        const ev = cachedEvents.find(ev => String(ev.id) === bar.dataset.evId);
+        if (ev) openEditEventModal(ev);
+      });
+    });
+  }
+
+  // ── ADD EVENT MODAL HANDLERS ──────────────────────────────────────────────
+  let selectedEventColor = '#6ea8ff';
+  let editingEventId = null;
+
+  document.querySelectorAll('#ae-swatches .color-swatch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      document.querySelectorAll('#ae-swatches .color-swatch').forEach(s => s.classList.remove('selected'));
+      sw.classList.add('selected');
+      selectedEventColor = sw.dataset.color;
+    });
+  });
+
+  function closeAddEventModal() {
+    document.getElementById('add-event-modal').classList.remove('open');
+    document.getElementById('ae-name').value = '';
+    document.getElementById('ae-start').value = '';
+    document.getElementById('ae-end').value = '';
+    document.getElementById('ae-notes').value = '';
+    selectedEventColor = '#6ea8ff';
+    editingEventId = null;
+    document.getElementById('ae-modal-title').textContent = 'Add Event';
+    document.getElementById('ae-save-btn').textContent = 'Add Event';
+    document.querySelectorAll('#ae-swatches .color-swatch').forEach((s, i) => s.classList.toggle('selected', i === 0));
+  }
+
+  function openEditEventModal(ev) {
+    document.getElementById('ae-modal-title').textContent = 'Edit Event';
+    document.getElementById('ae-save-btn').textContent = 'Save Changes';
+    document.getElementById('ae-name').value = ev.name;
+    document.getElementById('ae-start').value = ev.start_date;
+    document.getElementById('ae-end').value = ev.end_date;
+    document.getElementById('ae-notes').value = ev.notes || '';
+    selectedEventColor = ev.color;
+    editingEventId = ev.id;
+    document.querySelectorAll('#ae-swatches .color-swatch').forEach(s => {
+      s.classList.toggle('selected', s.dataset.color === ev.color);
+    });
+    document.getElementById('add-event-modal').classList.add('open');
+  }
+
+  document.getElementById('ae-cancel-btn').onclick = closeAddEventModal;
+  document.getElementById('add-event-modal').onclick = e => {
+    if (e.target === document.getElementById('add-event-modal')) closeAddEventModal();
+  };
+
+  document.getElementById('ae-save-btn').onclick = async () => {
+    const name  = document.getElementById('ae-name').value.trim();
+    const start = document.getElementById('ae-start').value;
+    const end   = document.getElementById('ae-end').value;
+    const notes = document.getElementById('ae-notes').value;
+    if (!name || !start || !end) { alert('Please fill in all fields.'); return; }
+    if (end < start) { alert('End date must be on or after start date.'); return; }
+    const body = JSON.stringify({ name, start_date: start, end_date: end, color: selectedEventColor, notes });
+    if (editingEventId) {
+      await apiFetch(`/api/events/${editingEventId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body });
+    } else {
+      await apiFetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+    }
+    closeAddEventModal();
+    fetchAndRenderEvents();
+  };
+
+  // ── EMOJI PICKER ──────────────────────────────────────────────────────────
+  const EMOJI_PRESETS = ['⛷️','🏔️','✈️','🎉','🍕','💪','🧘','🌅','🏖️','🎸','🍷','🎬','🏆','🎂','💊','🤒','🥾','🚗','🎯','🌊'];
+  let selectedEmojis = [];
+
+  function syncEmojiPicker() {
+    document.querySelectorAll('#modal-emoji-picker .emoji-btn').forEach(btn => {
+      btn.classList.toggle('selected', selectedEmojis.includes(btn.dataset.emoji));
+    });
+  }
+
+  (function initEmojiPicker() {
+    const picker = document.getElementById('modal-emoji-picker');
+    EMOJI_PRESETS.forEach(emoji => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'emoji-btn';
+      btn.dataset.emoji = emoji;
+      btn.textContent = emoji;
+      btn.onclick = () => {
+        if (selectedEmojis.includes(emoji)) {
+          selectedEmojis = selectedEmojis.filter(e => e !== emoji);
+        } else {
+          if (selectedEmojis.length >= 3) return;
+          selectedEmojis = [...selectedEmojis, emoji];
+        }
+        syncEmojiPicker();
+      };
+      picker.appendChild(btn);
+    });
+  })();
+
+  // ── MODAL HANDLERS ────────────────────────────────────────────────────────
+  document.getElementById('modal-close-btn').onclick = () =>
+    document.getElementById('day-modal').classList.remove('open');
+
+  document.getElementById('day-modal').onclick = e => {
+    if (e.target === document.getElementById('day-modal'))
+      document.getElementById('day-modal').classList.remove('open');
+  };
+
+  document.getElementById('modal-save-btn').onclick = async () => {
+    const dateStr = document.getElementById('modal-save-btn').dataset.date;
+    const note    = document.getElementById('modal-notes-ta').value;
+    const emojis  = selectedEmojis.join(',');
+    await apiFetch('/api/notes', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ date: dateStr, note, emojis }),
+    });
+    // Update caches
+    if (yearViewData && yearViewData[dateStr] !== undefined) {
+      yearViewData[dateStr].hasNote = note.trim().length > 0;
+    } else if (note.trim().length > 0) {
+      yearViewData = yearViewData || {};
+      yearViewData[dateStr] = { exercise: null, work: null, screenTime: null, hasNote: true };
+    }
+    if (selectedEmojis.length > 0) cachedEmojisMap[dateStr] = [...selectedEmojis];
+    else delete cachedEmojisMap[dateStr];
+    // Re-render icons on the day square
+    const sq = document.querySelector(`.day-sq[data-date="${dateStr}"]`);
+    if (sq) {
+      const d2 = (yearViewData && yearViewData[dateStr]) || {};
+      const hasSurf2 = d2?.surf != null && d2.surf > 0;
+      const hasNote2 = note.trim().length > 0;
+      const autoList2 = [hasSurf2 ? '🌊' : '', hasNote2 ? '✏️' : ''].filter(Boolean);
+      const allIcons2 = [...autoList2, ...(cachedEmojisMap[dateStr] || [])].slice(0, 4);
+      const iconsHtml = allIcons2.map(e => `<span>${e}</span>`).join('');
+      let topRow = sq.querySelector('.day-sq-top');
+      if (!topRow) { topRow = document.createElement('span'); topRow.className = 'day-sq-top'; sq.prepend(topRow); }
+      let numSpan = topRow.querySelector('.day-sq-num');
+      let iconsSpan = topRow.querySelector('.day-sq-icons');
+      if (iconsHtml && !iconsSpan) { iconsSpan = document.createElement('span'); iconsSpan.className = 'day-sq-icons'; topRow.appendChild(iconsSpan); }
+      if (iconsSpan) iconsSpan.innerHTML = iconsHtml;
+      if (!iconsHtml && iconsSpan) iconsSpan.remove();
+    }
+    const status = document.getElementById('modal-save-status');
+    status.style.display = 'inline';
+    setTimeout(() => { status.style.display = 'none'; }, 2000);
+    // Refresh notes sidebar and event bars
+    const refreshed = await apiFetch('/api/notes');
+    cachedNotes = refreshed?.notes || [];
+    renderNotesSidebar(cachedNotes);
+    fetchAndRenderEvents();
+  };
+
+  // ── SURF SESSION MODAL ────────────────────────────────────────────────────
+  let currentSurfDate = null;
+  let currentSurfId      = null;  // null = new session, number = editing existing
+  let currentSurfQuality = null;  // numeric value (0.5 increments) or null
+
+  function starsHtml(quality, size = 16) {
+    const q = quality || 0;
+    return [1,2,3,4,5].map(n => {
+      if (q >= n) {
+        return `<span class="surf-star active" style="font-size:${size}px;cursor:default;vertical-align:top">★</span>`;
+      } else if (q >= n - 0.5) {
+        return `<span style="font-size:${size}px;vertical-align:top;line-height:1;user-select:none;background:linear-gradient(to right,#fbbf24 50%,#334155 50%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">★</span>`;
+      } else {
+        return `<span class="surf-star" style="font-size:${size}px;cursor:default;vertical-align:top">★</span>`;
+      }
+    }).join('');
+  }
+
+  function setSurfStars(val) {
+    currentSurfQuality = val || null;
+    document.querySelectorAll('#surf-modal .surf-star-slot').forEach(slot => {
+      const left  = slot.querySelector('.sh-left');
+      const right = slot.querySelector('.sh-right');
+      const lv = parseFloat(left.dataset.val);
+      const rv = parseFloat(right.dataset.val);
+      left.classList.toggle('active',  (val || 0) >= lv);
+      right.classList.toggle('active', (val || 0) >= rv);
+    });
+  }
+
+  function updateSurfDuration() {
+    const start = document.getElementById('surf-time-start').value;
+    const end   = document.getElementById('surf-time-end').value;
+    const el    = document.getElementById('surf-duration');
+    if (start && end) {
+      const [sh, sm] = start.split(':').map(Number);
+      const [eh, em] = end.split(':').map(Number);
+      const diff = (eh * 60 + em) - (sh * 60 + sm);
+      if (diff > 0) {
+        const h = Math.floor(diff / 60), m = diff % 60;
+        el.textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      } else { el.textContent = ''; }
+    } else { el.textContent = ''; }
+  }
+
+  document.getElementById('surf-time-start').addEventListener('change', updateSurfDuration);
+  document.getElementById('surf-time-end').addEventListener('change', updateSurfDuration);
+
+  document.querySelectorAll('#surf-modal .sh-left, #surf-modal .sh-right').forEach(half => {
+    half.addEventListener('click', () => setSurfStars(parseFloat(half.dataset.val)));
+  });
+
+  function calcDuration(start, end) {
+    if (!start || !end) return '';
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    const diff = (eh * 60 + em) - (sh * 60 + sm);
+    if (diff <= 0) return '';
+    const h = Math.floor(diff / 60), m = diff % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  function renderSurfSessionCards(sessions) {
+    const container = document.getElementById('modal-surf-sessions');
+    if (!sessions.length) { container.innerHTML = ''; return; }
+    container.innerHTML = sessions.map((s, i) => {
+      const stars = starsHtml(s.quality, 14);
+      const duration = calcDuration(s.time_start, s.time_end);
+      const timeLabel = s.time_start && s.time_end
+        ? `${s.time_start}–${s.time_end}${duration ? ' ('+duration+')' : ''}`
+        : (s.time_start || '');
+      const fields = [
+        ['Time',      timeLabel],
+        ['Wave Size', s.wave_size],
+        ['Tide',      s.tide],
+        ['Wind',      s.wind],
+        ['Texture',   s.texture],
+        ['Prim. Swell', s.swell_direction],
+        ['Sec. Swell',  s.swell_secondary],
+        ['Location',  s.location],
+        ['Surfboard', s.surfboard],
+      ].filter(([, v]) => v);
+      const details = fields.map(([l, v]) =>
+        `<span class="sd-label">${l}</span><span class="sd-value">${v}</span>`
+      ).join('');
+      return `<div class="surf-session-card">
+        <div class="surf-card-header">
+          <span class="surf-card-title">🏄 Session ${i + 1}</span>
+          <button class="surf-card-edit" data-id="${s.id}">Edit</button>
+        </div>
+        <div class="surf-card-stars">${stars}</div>
+        ${fields.length ? `<div class="surf-card-details">${details}</div>` : ''}
+      </div>`;
+    }).join('');
+    container.querySelectorAll('.surf-card-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const session = sessions.find(s => s.id == btn.dataset.id);
+        if (session) openSurfModal(session.date, session);
+      });
+    });
+  }
+
+  function openSurfModal(dateStr, session = null) {
+    currentSurfDate = dateStr;
+    currentSurfId   = session ? session.id : null;
+    const dt = new Date(dateStr + 'T12:00:00');
+    const label = dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    document.getElementById('surf-modal-date').textContent =
+      label + (session ? ' — Edit Session' : ' — New Session');
+    setSurfStars(session?.quality || 0);
+    document.getElementById('surf-wave-size').value        = session?.wave_size        || '';
+    document.getElementById('surf-tide').value             = session?.tide             || '';
+    document.getElementById('surf-wind').value             = session?.wind             || '';
+    document.getElementById('surf-texture').value          = session?.texture          || '';
+    document.getElementById('surf-time-start').value       = session?.time_start       || '';
+    document.getElementById('surf-time-end').value         = session?.time_end         || '';
+    document.getElementById('surf-swell-dir').value        = session?.swell_direction  || '';
+    document.getElementById('surf-swell-secondary').value  = session?.swell_secondary  || '';
+    document.getElementById('surf-location').value         = session?.location         || '';
+    document.getElementById('surf-surfboard').value        = session?.surfboard        || '';
+    document.getElementById('surf-notes').value            = session?.notes            || '';
+    updateSurfDuration();
+    document.getElementById('surf-save-status').style.display = 'none';
+    document.getElementById('surf-delete-btn').style.display = session ? 'inline-flex' : 'none';
+    document.getElementById('surf-modal').classList.add('open');
+  }
+
+  document.getElementById('open-surf-btn').addEventListener('click', () => {
+    const dateStr = document.getElementById('modal-save-btn').dataset.date;
+    if (dateStr) openSurfModal(dateStr);
+  });
+
+  document.getElementById('surf-close-btn').onclick = () =>
+    document.getElementById('surf-modal').classList.remove('open');
+
+  document.getElementById('surf-modal').onclick = e => {
+    if (e.target === document.getElementById('surf-modal'))
+      document.getElementById('surf-modal').classList.remove('open');
+  };
+
+  document.getElementById('surf-delete-btn').onclick = async () => {
+    if (!currentSurfId) return;
+    await apiFetch(`/api/surf-session/${currentSurfId}`, { method: 'DELETE' });
+    document.getElementById('surf-modal').classList.remove('open');
+    const fresh = await apiFetch(`/api/surf-sessions/${currentSurfDate}`);
+    renderSurfSessionCards(fresh || []);
+    if (document.getElementById('cal-sub-journal').style.display !== 'none') await loadSurfJournal();
+  };
+
+  document.getElementById('surf-save-btn').onclick = async () => {
+    if (!currentSurfDate) return;
+    const quality         = currentSurfQuality;
+    const wave_size       = document.getElementById('surf-wave-size').value.trim();
+    const tide            = document.getElementById('surf-tide').value.trim();
+    const wind            = document.getElementById('surf-wind').value.trim();
+    const time_start      = document.getElementById('surf-time-start').value;
+    const time_end        = document.getElementById('surf-time-end').value;
+    const swell_direction = document.getElementById('surf-swell-dir').value.trim();
+    const swell_secondary = document.getElementById('surf-swell-secondary').value.trim();
+    const location        = document.getElementById('surf-location').value.trim();
+    const surfboard       = document.getElementById('surf-surfboard').value.trim();
+    const notes           = document.getElementById('surf-notes').value.trim();
+    const texture         = document.getElementById('surf-texture').value.trim();
+    const payload         = { quality, wave_size, tide, wind, texture, time_start, time_end, swell_direction, swell_secondary, location, surfboard, notes };
+    if (currentSurfId) {
+      await apiFetch(`/api/surf-session/${currentSurfId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await apiFetch('/api/surf-session', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: currentSurfDate, ...payload }),
+      });
+    }
+    const st = document.getElementById('surf-save-status');
+    st.style.display = 'inline';
+    const fresh = await apiFetch(`/api/surf-sessions/${currentSurfDate}`);
+    renderSurfSessionCards(fresh || []);
+    setTimeout(async () => {
+      st.style.display = 'none';
+      document.getElementById('surf-modal').classList.remove('open');
+      if (document.getElementById('cal-sub-journal').style.display !== 'none') await loadSurfJournal();
+    }, 1200);
+  };
+
+  // ── CALENDAR SUB-TOGGLE ───────────────────────────────────────────────────
+  function showCalSub(sub) {
+    document.querySelectorAll('.cal-sub-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.sub === sub));
+    document.getElementById('cal-sub-calendar').style.display = sub === 'calendar' ? '' : 'none';
+    document.getElementById('cal-sub-journal').style.display  = sub === 'journal'  ? '' : 'none';
+    if (sub === 'journal') loadSurfJournal();
+  }
+
+  document.querySelectorAll('.cal-sub-btn').forEach(b => {
+    b.addEventListener('click', () => showCalSub(b.dataset.sub));
+  });
+
+  // ── SURF JOURNAL ──────────────────────────────────────────────────────────
+  const SJ_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const SJ_DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let sjSessionsMap = {}; // id → session object, for edit lookup
+  let sjSessions    = []; // cached for re-sort without re-fetch
+  let sjSort        = { key: 'date', dir: 'desc' };
+
+  const SJ_SORT_OPTS = [
+    { key: 'date',            label: 'Date',       defaultDir: 'desc' },
+    { key: 'quality',         label: 'Stars',      defaultDir: 'desc' },
+    { key: 'wave_size',       label: 'Wave Size',  defaultDir: 'desc' },
+    { key: 'location',        label: 'Location',   defaultDir: 'asc'  },
+    { key: 'swell_direction', label: 'Swell',      defaultDir: 'asc'  },
+  ];
+
+  function getSortValue(s, key) {
+    if (key === 'date')            return s.date || '';
+    if (key === 'quality')         return s.quality || 0;
+    if (key === 'wave_size')       return parseFloat(s.wave_size) || 0;
+    if (key === 'location')        return (s.location || '').toLowerCase();
+    if (key === 'swell_direction') return (s.swell_direction || '').toLowerCase();
+    return '';
+  }
+
+  function sortedSessions(sessions) {
+    return [...sessions].sort((a, b) => {
+      const av = getSortValue(a, sjSort.key);
+      const bv = getSortValue(b, sjSort.key);
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      return sjSort.dir === 'asc' ? cmp : -cmp;
+    });
+  }
+
+  function renderSortBar() {
+    const bar = document.getElementById('sj-sort-bar');
+    const arrow = sjSort.dir === 'asc' ? ' ↑' : ' ↓';
+    bar.innerHTML = `<span class="sort-label">Sort:</span>` +
+      SJ_SORT_OPTS.map(o =>
+        `<button class="sj-sort-btn${sjSort.key === o.key ? ' active' : ''}" data-key="${o.key}" data-default="${o.defaultDir}">` +
+        `${o.label}${sjSort.key === o.key ? arrow : ''}</button>`
+      ).join('');
+    bar.querySelectorAll('.sj-sort-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (sjSort.key === btn.dataset.key) {
+          sjSort.dir = sjSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          sjSort = { key: btn.dataset.key, dir: btn.dataset.default };
+        }
+        renderSortBar();
+        renderSurfJournal(sortedSessions(sjSessions));
+      });
+    });
+  }
+
+  function renderSurfJournal(sessions) {
+    const list = document.getElementById('surf-journal-list');
+    if (!sessions.length) {
+      list.innerHTML = `<div class="sj-empty">No surf sessions logged yet.</div>`;
+      return;
+    }
+    sjSessionsMap = {};
+    list.innerHTML = sessions.map(s => {
+      sjSessionsMap[s.id] = s;
+      const dt = new Date(s.date + 'T12:00:00');
+      const dateLabel = `${SJ_DAYS[dt.getDay()]} ${SJ_MONTHS[dt.getMonth()]} ${dt.getDate()}`;
+      const stars = starsHtml(s.quality, 14);
+      const duration = calcDuration(s.time_start, s.time_end);
+      const timeLabel = s.time_start && s.time_end
+        ? `${s.time_start}–${s.time_end}${duration ? ' ('+duration+')' : ''}`
+        : (s.time_start || '');
+      const detailFields = [
+        ['Time',        timeLabel],
+        ['Tide',        s.tide],
+        ['Wind',        s.wind],
+        ['Texture',     s.texture],
+        ['Prim. Swell', s.swell_direction],
+        ['Sec. Swell',  s.swell_secondary],
+        ['Surfboard',   s.surfboard],
+      ].filter(([,v]) => v);
+      const detailCells = detailFields.map(([l,v]) =>
+        `<span class="sd-label">${l}</span><span class="sd-value">${v}</span>`
+      ).join('');
+      const notesHtml = s.notes
+        ? `<div class="sj-notes">"${s.notes}"</div>` : '';
+      return `<div class="sj-row" data-id="${s.id}">
+        <div class="sj-row-summary">
+          <span class="sj-date">${dateLabel}</span>
+          <span class="sj-location">${s.location || '—'}</span>
+          <span class="sj-wave">${s.wave_size ? s.wave_size + 'ft.' + (duration ? ' · '+duration : '') : (duration || '—')}</span>
+          <span class="sj-stars">${stars}</span>
+        </div>
+        <div class="sj-row-detail">
+          ${detailCells ? `<div class="sj-detail-grid">${detailCells}</div>` : ''}
+          ${notesHtml}
+          <button class="sj-edit-btn" data-id="${s.id}">Edit</button>
+        </div>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.sj-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const wasOpen = row.classList.contains('open');
+        list.querySelectorAll('.sj-row').forEach(r => r.classList.remove('open'));
+        if (!wasOpen) row.classList.add('open');
+      });
+    });
+    list.querySelectorAll('.sj-edit-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const session = sjSessionsMapparseInt([btn.dataset.id)];
+        if (session) openSurfModal(session.date, session);
+      });
+    });
+  }
+
+  async function loadSurfJournal() {
+    document.getElementById('surf-journal-list').innerHTML =
+      `<div class="sj-empty">Loading…</div>`;
+    const sessions = await apiFetch('/api/surf-sessions');
+    sjSessions = sessions || [];
+    renderSortBar();
+    renderSurfJournal(sortedSessions(sjSessions));
+  }
+
+  document.querySelectorAll('.tab').forEach(t => {
+    t.onclick = async () => {
+      document.querySelectorAll('.tab, .view').forEach(el => el.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById(`view-${t.dataset.view}`).classList.add('active');
+      state.currentView = t.dataset.view;
+      if (t.dataset.view === 'monthly') {
+        await renderMonthly();
+        // Also load monthly data for trends sparklines
+        state.monthlyData = state.monthlyData || {};
+      }
+      if (t.dataset.view === 'year') {
+        showCalSub('calendar');
+        await renderYearView();
+      }
+      if (t.dataset.view === 'trends') {
+        await renderTrends();
+      }
+    };
+  });
+
+  // ── MONTH NAV ─────────────────────────────────────────────────────────────
+  document.getElementById('prev-month').onclick = async () => {
+    const [y, m] = state.logMonth.split('-').map(Number);
+    const d = new Date(y, m - 2, 1);
+    state.logMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
+    await renderMonthly();
+  };
+  document.getElementById('next-month').onclick = async () => {
+    const [y, m] = state.logMonth.split('-').map(Number);
+    const d = new Date(y, m, 1);
+    state.logMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
+    await renderMonthly();
+  };
+
+  // ── EXPORT BUTTONS ────────────────────────────────────────────────────────
+  document.getElementById('export-month').onclick = exportMonthCSV;
+  document.getElementById('export-all').onclick   = exportAllCSV;
+
+  init();
+</script>
+</body>
+</html>
