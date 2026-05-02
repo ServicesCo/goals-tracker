@@ -1,6 +1,7 @@
 {
   "name": "goals-tracker",
   "version": "1.0.0",
+  "packageManager": "npm@10.9.7",
   "scripts": {
     "start": "node server.js"
   },
