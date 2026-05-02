@@ -1217,7 +1217,7 @@
         cells += `
           <td class="day-cell ${isToday ? 'today-col' : ''} ${isFuture ? 'future-col' : ''}">
             <input
-              type="number" step="any"
+              type="text" inputmode="decimal"
               class="day-input${hasData ? ' has-value' : ''}"
               data-goal="${g.id}" data-date="${dateStr}"
               value="${displayVal}"
@@ -1231,10 +1231,77 @@
     });
     table.appendChild(tbody);
 
-    // Highlight filled inputs + auto-save on blur
+    // Build 2-D grid [rowIdx][colIdx] for arrow-key navigation
+    const gridInputs = trackableGoals.map((g, ri) =>
+      Array.from(table.querySelectorAll(`.day-input[data-goal="${g.id}"]`))
+    );
+
+    function gridPos(inp) {
+      for (let r = 0; r < gridInputs.length; r++)
+        for (let c = 0; c < gridInputs[r].length; c++)
+          if (gridInputs[r][c] === inp) return [r, c];
+      return null;
+    }
+
+    function moveFocus(inp, dr, dc) {
+      const pos = gridPos(inp);
+      if (!pos) return;
+      let [r, c] = pos;
+      r += dr; c += dc;
+      if (r < 0) r = 0;
+      if (r >= gridInputs.length) r = gridInputs.length - 1;
+      if (c < 0) c = 0;
+      if (c >= gridInputs[0].length) c = gridInputs[0].length - 1;
+      const target = gridInputs[r][c];
+      if (target && !target.disabled) { target.focus(); target.select(); }
+    }
+
+    // Attach per-cell events
     table.querySelectorAll('.day-input').forEach(inp => {
       inp.addEventListener('input', () => inp.classList.toggle('has-value', inp.value !== ''));
       inp.addEventListener('blur',  () => saveCell(inp));
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft')  { e.preventDefault(); moveFocus(inp, 0, -1); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); moveFocus(inp, 0,  1); }
+        if (e.key === 'ArrowUp')    { e.preventDefault(); moveFocus(inp, -1, 0); }
+        if (e.key === 'ArrowDown' || e.key === 'Enter') { e.preventDefault(); moveFocus(inp, 1, 0); }
+        if (e.key === 'Tab')        { /* browser handles natively */ }
+      });
+    });
+
+    // Matrix paste: parse TSV from clipboard and fill cells from focused origin
+    table.addEventListener('paste', async e => {
+      const active = document.activeElement;
+      if (!active || !active.classList.contains('day-input')) return;
+      e.preventDefault();
+
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      const rows = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trimEnd().split('\n');
+      const origin = gridPos(active);
+      if (!origin) return;
+      const [or, oc] = origin;
+
+      const toSave = [];
+      rows.forEach((rowStr, dr) => {
+        const cols = rowStr.split('\t');
+        cols.forEach((cell, dc) => {
+          const r = or + dr, c = oc + dc;
+          if (r >= gridInputs.length || c >= gridInputs[0].length) return;
+          const inp = gridInputs[r][c];
+          if (!inp || inp.disabled) return;
+          const val = cell.trim();
+          inp.value = val;
+          inp.classList.toggle('has-value', val !== '');
+          toSave.push(inp);
+        });
+      });
+
+      // Save all pasted cells, then move focus to bottom-right of pasted range
+      for (const inp of toSave) await saveCell(inp);
+      const lastR = Math.min(or + rows.length - 1, gridInputs.length - 1);
+      const lastC = Math.min(oc + rows[0].split('\t').length - 1, gridInputs[0].length - 1);
+      const dest = gridInputs[lastR][lastC];
+      if (dest && !dest.disabled) { dest.focus(); dest.select(); }
     });
   }
 
