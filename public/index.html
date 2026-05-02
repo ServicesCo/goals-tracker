@@ -1210,7 +1210,7 @@
         const dateStr = `${state.logMonth}-${String(d).padStart(2,'0')}`;
         const isFuture = dateStr > todayStr;
         const isToday = dateStr === todayStr;
-        const existingVal = state.monthlyData`${[g.id}:${dateStr}`];
+        const existingVal = state.monthlyData[`${g.id}:${dateStr}`];
         const hasData = existingVal !== undefined && existingVal !== null && existingVal !== 0;
         const displayVal = hasData ? existingVal : '';
         const placeholder = isFuture ? '' : '—';
@@ -1419,10 +1419,10 @@
       const corrLabels = d2.weekly.map(w => w.label);
       const scData  = d2.weekly.map(w => +w.avg.toFixed(2));
       const exData  = d6.weekly.map(w => +w.avg.toFixed(2));
-      const wlbMap  = Object.fromEntries(d4.weekly.map(w => w.label, +([w.total / 7).toFixed(2)]));
+      const wlbMap  = Object.fromEntries(d4.weekly.map(w => [w.label, +(w.total / 7).toFixed(2)]));
       const wlbData = corrLabels.map(lbl => wlbMap[lbl] != null ? wlbMap[lbl] : 0);
       const hasData = scData.some(v => v > 0) || exData.some(v => v > 0) || wlbData.some(v => v > 0);
-      const surfMap  = Object.fromEntries(d3.weekly.map(w => w.label, +([w.total / 7).toFixed(2)]));
+      const surfMap  = Object.fromEntries(d3.weekly.map(w => [w.label, +(w.total / 7).toFixed(2)]));
       const surfData = corrLabels.map(lbl => surfMap[lbl] != null ? surfMap[lbl] : 0);
 
       const corrSec = document.createElement('div');
@@ -2060,7 +2060,7 @@
       let evBars = '';
       if (dayEvs.length > 0 && cachedGlobalMaxSlot >= 0) {
         const slotObj = {};
-        dayEvs.forEach(ev => { slotObjcachedEventSlots.get([ev.id)] = ev; });
+        dayEvs.forEach(ev => { slotObj[cachedEventSlots.get(ev.id)] = ev; });
         let barsHtml = '';
         for (let s = cachedGlobalMaxSlot; s >= 0; s--) {
           const ev = slotObj[s];
@@ -2572,7 +2572,7 @@
     list.querySelectorAll('.sj-edit-btn').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
-        const session = sjSessionsMapparseInt([btn.dataset.id)];
+        const session = sjSessionsMap[parseInt(btn.dataset.id)];
         if (session) openSurfModal(session.date, session);
       });
     });
