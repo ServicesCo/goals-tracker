@@ -662,6 +662,9 @@
     allRawLogs: []           // [{goal_id, date, value}] preloaded for Export All
   };
 
+  let monthlyGrid = [];        // written by renderMonthly after each render
+  let pasteInProgress = false; // suppresses blur→saveCell during matrix paste
+
   const pwd = () => sessionStorage.getItem('goals_pwd');
 
   async function apiFetch(url, opts = {}) {
@@ -1235,6 +1238,7 @@
     const gridInputs = trackableGoals.map((g, ri) =>
       Array.from(table.querySelectorAll(`.day-input[data-goal="${g.id}"]`))
     );
+    monthlyGrid = gridInputs;
 
     function gridPos(inp) {
       for (let r = 0; r < gridInputs.length; r++)
@@ -1259,7 +1263,7 @@
     // Attach per-cell events
     table.querySelectorAll('.day-input').forEach(inp => {
       inp.addEventListener('input', () => inp.classList.toggle('has-value', inp.value !== ''));
-      inp.addEventListener('blur',  () => saveCell(inp));
+      inp.addEventListener('blur',  () => { if (!pasteInProgress) saveCell(inp); });
       inp.addEventListener('keydown', e => {
         if (e.key === 'ArrowLeft')  { e.preventDefault(); moveFocus(inp, 0, -1); }
         if (e.key === 'ArrowRight') { e.preventDefault(); moveFocus(inp, 0,  1); }
@@ -1269,40 +1273,6 @@
       });
     });
 
-    // Matrix paste: parse TSV from clipboard and fill cells from focused origin
-    table.addEventListener('paste', async e => {
-      const active = document.activeElement;
-      if (!active || !active.classList.contains('day-input')) return;
-      e.preventDefault();
-
-      const text = (e.clipboardData || window.clipboardData).getData('text');
-      const rows = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trimEnd().split('\n');
-      const origin = gridPos(active);
-      if (!origin) return;
-      const [or, oc] = origin;
-
-      const toSave = [];
-      rows.forEach((rowStr, dr) => {
-        const cols = rowStr.split('\t');
-        cols.forEach((cell, dc) => {
-          const r = or + dr, c = oc + dc;
-          if (r >= gridInputs.length || c >= gridInputs[0].length) return;
-          const inp = gridInputs[r][c];
-          if (!inp || inp.disabled) return;
-          const val = cell.trim();
-          inp.value = val;
-          inp.classList.toggle('has-value', val !== '');
-          toSave.push(inp);
-        });
-      });
-
-      // Save all pasted cells, then move focus to bottom-right of pasted range
-      for (const inp of toSave) await saveCell(inp);
-      const lastR = Math.min(or + rows.length - 1, gridInputs.length - 1);
-      const lastC = Math.min(oc + rows[0].split('\t').length - 1, gridInputs[0].length - 1);
-      const dest = gridInputs[lastR][lastC];
-      if (dest && !dest.disabled) { dest.focus(); dest.select(); }
-    });
   }
 
   let _autoSaveTimer = null;
@@ -2692,6 +2662,65 @@
   // ── EXPORT BUTTONS ────────────────────────────────────────────────────────
   document.getElementById('export-month').onclick = exportMonthCSV;
   document.getElementById('export-all').onclick   = () => exportAllCSV();
+
+  // ── MONTHLY PASTE HANDLER (registered once) ──────────────────────────────
+  document.getElementById('monthly-table').addEventListener('paste', async e => {
+    const active = document.activeElement;
+    if (!active || !active.classList.contains('day-input') || !monthlyGrid.length) return;
+    e.preventDefault();
+    pasteInProgress = true;
+    try {
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      const rows = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trimEnd().split('\n');
+      let origin = null;
+      for (let r = 0; r < monthlyGrid.length && !origin; r++)
+        for (let c = 0; c < monthlyGrid[r].length; c++)
+          if (monthlyGrid[r][c] === active) { origin = [r, c]; break; }
+      if (!origin) return;
+      const [or, oc] = origin;
+      const entries = [], deletions = [];
+      rows.forEach((rowStr, dr) => {
+        rowStr.split('\t').forEach((cell, dc) => {
+          const r = or + dr, c = oc + dc;
+          if (r >= monthlyGrid.length || c >= monthlyGrid[r].length) return;
+          const inp = monthlyGrid[r][c];
+          if (!inp || inp.disabled) return;
+          const val = cell.trim();
+          inp.value = val;
+          inp.classList.toggle('has-value', val !== '');
+          const goalId = parseInt(inp.dataset.goal), date = inp.dataset.date;
+          if (val === '') { deletions.push({ goal_id: goalId, date }); }
+          else { const num = parseFloat(val); if (!isNaN(num)) entries.push({ goal_id: goalId, date, value: num }); }
+        });
+      });
+      try {
+        await apiFetch('/api/log/daily', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entries, deletions }),
+        });
+        entries.forEach(e => { state.monthlyData[`${e.goal_id}:${e.date}`] = e.value; });
+        deletions.forEach(d => { delete state.monthlyData[`${d.goal_id}:${d.date}`]; });
+        entries.forEach(e => {
+          const idx = state.allRawLogs.findIndex(r => r.goal_id === e.goal_id && r.date === e.date);
+          if (idx === -1) state.allRawLogs.push({ goal_id: e.goal_id, date: e.date, value: e.value });
+          else state.allRawLogs[idx].value = e.value;
+        });
+        deletions.forEach(d => {
+          const idx = state.allRawLogs.findIndex(r => r.goal_id === d.goal_id && r.date === d.date);
+          if (idx !== -1) state.allRawLogs.splice(idx, 1);
+        });
+        state.logs = await apiFetch('/api/logs') || [];
+        renderDashboard();
+        showAutoSaveStatus(`Pasted ${entries.length + deletions.length} cells`);
+      } catch { showAutoSaveStatus('Paste save failed', true); }
+    } finally {
+      pasteInProgress = false;
+      const lastR = Math.min(or + rows.length - 1, monthlyGrid.length - 1);
+      const lastC = Math.min(oc + rows[0].split('\t').length - 1, monthlyGrid[or].length - 1);
+      const dest = monthlyGrid[lastR]?.[lastC];
+      if (dest && !dest.disabled) { dest.focus(); dest.select(); }
+    }
+  });
 
   init();
 </script>
