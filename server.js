@@ -202,7 +202,7 @@ app.get('/api/init', (req, res) => {
     const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
     const todayStr  = todayDate.toISOString().split('T')[0];
     const streakStmt = db.prepare(
-      `SELECT date, value FROM daily_logs WHERE goal_id = ? AND date >= '2026-01-01' ORDER BY date DESC`
+      `SELECT date, value FROM daily_logs WHERE goal_id = ? AND date >= '${yearStart}' ORDER BY date DESC`
     );
     const streaks = [];
     for (const goal of habitGoals) {
@@ -215,7 +215,7 @@ app.get('/api/init', (req, res) => {
       const cur = new Date(start);
       while (true) {
         const ds = cur.toISOString().split('T')[0];
-        if (ds < '2026-01-01') break;
+        if (ds < yearStart) break;
         const hasLog = ds in logMap;
         if (!hasLog && !goal.missingIsPass) break;
         if (hasLog && !goal.fn(logMap[ds])) break;
@@ -507,7 +507,7 @@ app.get('/api/year-view/2026', (req, res) => {
         MAX(CASE WHEN goal_id = 3 THEN value END) AS surf,
         MAX(CASE WHEN goal_id = 9 THEN value END) AS reading
       FROM daily_logs
-      WHERE date BETWEEN '2026-01-01' AND '2026-12-31'
+      WHERE date BETWEEN '${new Date().getFullYear()}-01-01' AND '${new Date().getFullYear()}-12-31'
         AND goal_id IN (2, 3, 4, 6, 9)
       GROUP BY date
     `).all();
@@ -548,9 +548,10 @@ app.get('/api/streaks', (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split('T')[0];
+    const yearStart = `${today.getFullYear()}-01-01`;
 
     const stmt = db.prepare(
-      `SELECT date, value FROM daily_logs WHERE goal_id = ? AND date >= '2026-01-01' ORDER BY date DESC`
+      `SELECT date, value FROM daily_logs WHERE goal_id = ? AND date >= '${yearStart}' ORDER BY date DESC`
     );
 
     const results = [];
@@ -566,7 +567,7 @@ app.get('/api/streaks', (req, res) => {
       const cur = new Date(start);
       while (true) {
         const ds = cur.toISOString().split('T')[0];
-        if (ds < '2026-01-01') break;
+        if (ds < yearStart) break;
         const hasLog = ds in logMap;
         if (!hasLog && !goal.missingIsPass) break;
         if (hasLog && !goal.fn(logMap[ds])) break;
