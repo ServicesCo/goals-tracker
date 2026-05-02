@@ -1128,7 +1128,7 @@
     trackableGoals.forEach(g => {
       const row = [g.metric];
       dateCols.forEach(dateStr => {
-        const v = state.monthlyData`${[g.id}:${dateStr}`];
+        const v = state.monthlyData[`${g.id}:${dateStr}`];
         // Match on-screen display: treat 0/null/undefined as empty
         row.push(v === undefined || v === null || v === 0 ? '' : v);
       });
@@ -1162,7 +1162,7 @@
     const data = await apiFetch(`/api/logs/monthly?month=${state.logMonth}`);
     if (!data) return;
     state.monthlyData = {};
-    data.forEach(r => { state.monthlyData`${r.goal_id}:${[r.date}`] = r.value; });
+    data.forEach(r => { state.monthlyData[`${r.goal_id}:${r.date}`] = r.value; });
   }
 
   async function renderMonthly() {
